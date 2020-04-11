@@ -21,5 +21,5 @@ inputs:
     required: false
     description: Whether to run commands in parallel
 runs:
-  using: 'node12'
-  main: 'dist/run'
+  using: node12
+  main: dist/index.js

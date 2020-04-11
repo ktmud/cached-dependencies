@@ -8,7 +8,7 @@
     "format-check": "prettier --check **/*.ts",
     "clean": "rm -rf ./lib ./dist",
     "lint": "eslint src/**/*.ts",
-    "build": "npm run clean && tsc && ncc build -o dist/run src/run.ts && ncc build -o dist/scripts/cache src/scripts/cache.ts",
+    "build": "npm run clean && tsc && ncc build -o dist src/run.ts && ncc build -o dist/scripts/cache src/scripts/cache.ts",
     "test": "jest --clearCache && jest --coverage",
     "all": "npm run format && npm run lint && npm run test && npm run build"
   },

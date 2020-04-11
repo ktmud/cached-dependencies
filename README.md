@@ -81,6 +81,26 @@ The `cache-restore` and `cache-save` uses [actions/cache](https://github.com/act
 
 You can override these by editing `.github/workflows/caches.js`.
 
+### Override default commands
+
+When `run` is not provided:
+
+```yaml
+jobs:
+  name: Test Job
+  steps:
+    - name: Install dependencies
+      uses: ktmud/setup-webapp@v
+```
+
+You must specify `default-setup-command` in `.github/workflows/bashlib.sh`. For example, you can try to install pip and npm at the same time:
+
+```bash
+default-setup-command() {
+  pip-install & npm-install
+}
+```
+
 ### Use different config location
 
 Both the two config files above can be placed in other locations:

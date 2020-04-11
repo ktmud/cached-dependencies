@@ -1329,7 +1329,7 @@ function runCommand(cmd, extraBashlib) {
             bashlibCommands.push(`source ${extraBashlib}`);
         }
         try {
-            yield exec_1.exec('bash', ['-c', [...bashlibCommands, cmd].join('\n\n     ')]);
+            yield exec_1.exec('bash', ['-c', [...bashlibCommands, cmd].join('\n     ')]);
         }
         catch (error) {
             core.setFailed(error.message);

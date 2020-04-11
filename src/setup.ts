@@ -23,7 +23,7 @@ export async function runCommand(
     bashlibCommands.push(`source ${extraBashlib}`);
   }
   try {
-    await exec('bash', ['-c', [...bashlibCommands, cmd].join('\n\n     ')]);
+    await exec('bash', ['-c', [...bashlibCommands, cmd].join('\n     ')]);
   } catch (error) {
     core.setFailed(error.message);
   }

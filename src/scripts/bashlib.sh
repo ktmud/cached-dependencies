@@ -35,5 +35,6 @@ npm-install() {
 
 # default setup will install both pip and npm pacakges at the same time
 default-setup-command() {
-  pip-install & npm-install
+  echo 'Please provide `run` commands or configure `default-setup-command`.'
+  exit 1
 }
