@@ -116,3 +116,8 @@ If one or more of your commands must spread across multiple lines, you can add a
       cd cypress/ && npm install
       cache-save cypress
 ```
+
+### License
+
+The scripts and documentation in this project are released under [the MIT License](LICENSE).
+
