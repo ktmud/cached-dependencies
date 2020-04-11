@@ -5,8 +5,10 @@ import * as core from '@actions/core';
 import * as glob from '@actions/glob';
 import * as fs from 'fs';
 import hasha from 'hasha';
-import caches from './caches';
-import { Inputs, InputName, EnvVariable, DefaultInputs } from '../constants';
+import saveCache from '@actions/cache/dist/save';
+import restoreCache from '@actions/cache/dist/restore';
+import caches from './caches'; // default cache configs
+import { Inputs, InputName, DefaultInputs } from '../constants';
 import { applyInputs } from '../utils/inputs';
 
 // GitHub uses `sha256` for the built-in `${{ hashFiles(...) }}` expression
@@ -15,6 +17,8 @@ const HASH_OPTION = { algorithm: 'sha256' };
 
 /**
  * Load custom cache configs from the `caches` path defined in inputs.
+ *
+ * @returns {boolean} Whether the loading is successfull.
  */
 export async function loadCustomCacheConfigs() {
   const customCachePath = core.getInput('caches') || DefaultInputs.Caches;
@@ -23,9 +27,17 @@ export async function loadCustomCacheConfigs() {
     Object.assign(caches, customCache.default);
     core.debug(`Use cache configs from ${customCachePath}`);
   } catch (error) {
-    core.setFailed(`Failed to load custom cache configs: ${customCachePath}`);
-    return;
+    if (
+      customCachePath !== DefaultInputs.Caches ||
+      !error.message.includes('Cannot find module')
+    ) {
+      core.error(error.message);
+      core.setFailed(`Failed to load custom cache configs: ${customCachePath}`);
+      process.exit(1);
+      return false;
+    }
   }
+  return true;
 }
 
 /**
@@ -73,33 +85,12 @@ export async function getCacheInputs(
   };
 }
 
-/**
- * Import `@actions/cache` modules safely, i.e., force GitHub event name to be
- * empty, so actual runner code doesn't execute. Then we manually trigger the
- * run with new inputs.
- *
- * Note we can't just apply inputs before import, because the runner is always
- * called at first import, and there is no way to capture the returned promise.
- * We want to capture the promise so we have guarantees on when the job finishes.
- *
- * @param {string} moduleName - Name of the JS module to import.
- * @param {Inputs} inputs - Custom inputs to apply to the runner.
- */
-async function safeImportRun(moduleName: string, inputs: Inputs) {
-  // We assume the default export of the module is always the runner function.
-  const { default: runModule } = await applyInputs(
-    { [EnvVariable.GitHubEventName]: '' },
-    () => import(moduleName),
-  );
-  return await applyInputs(inputs, runModule);
-}
-
 export const actions = {
   restore(inputs: Inputs) {
-    return safeImportRun('@actions/cache/dist/save', inputs);
+    return applyInputs(inputs, restoreCache);
   },
   save(inputs: Inputs) {
-    return safeImportRun('@actions/cache/dist/save', inputs);
+    return applyInputs(inputs, saveCache);
   },
 };
 
@@ -111,17 +102,19 @@ export async function run(
 ) {
   if (!action || !(action in actions)) {
     core.setFailed(`Choose a cache action from: [restore, save]`);
-    return;
+    return process.exit(1);
   }
   if (!cacheName) {
     core.setFailed(`Must provide a cache name.`);
-    return;
+    return process.exit(1);
   }
-  await loadCustomCacheConfigs();
-  const inputs = await getCacheInputs(cacheName);
-  if (inputs) {
-    await actions[action as ActionChoice](inputs);
-  } else {
-    core.setFailed(`Cache "${cacheName}" not defined, failed to ${action}.`);
+  if (await loadCustomCacheConfigs()) {
+    const inputs = await getCacheInputs(cacheName);
+    if (inputs) {
+      await actions[action as ActionChoice](inputs);
+    } else {
+      core.setFailed(`Cache "${cacheName}" not defined, failed to ${action}.`);
+      process.exit(1);
+    }
   }
 }

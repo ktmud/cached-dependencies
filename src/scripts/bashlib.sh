@@ -2,6 +2,10 @@
 # -----------------------------------------------
 # Predefined command shortcuts
 # -----------------------------------------------
+
+# Exit on any command fails
+set -e
+
 bashSource=${BASH_SOURCE[${#BASH_SOURCE[@]} - 1]:-${(%):-%x}}
 cacheScript="$(dirname $(dirname $(dirname $bashSource)))/dist/scripts/cache"
 

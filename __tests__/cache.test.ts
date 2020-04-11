@@ -45,21 +45,11 @@ describe('cache runner', () => {
 
     expect(result).toBeUndefined();
 
-    // before import
-    expect(setInputsMock).toHaveBeenNthCalledWith(1, {
-      [EnvVariable.GitHubEventName]: '',
-    });
-
-    // after import, before run
-    expect(setInputsMock).toHaveBeenNthCalledWith(2, {
-      [EnvVariable.GitHubEventName]: GitHubEvent.PullRequest,
-    });
-
     // before run
-    expect(setInputsMock).toHaveBeenNthCalledWith(3, inputs);
+    expect(setInputsMock).toHaveBeenNthCalledWith(1, inputs);
 
     // after run
-    expect(setInputsMock).toHaveBeenNthCalledWith(4, {
+    expect(setInputsMock).toHaveBeenNthCalledWith(2, {
       [InputName.Key]: '',
       [InputName.Path]: '',
       [InputName.RestoreKeys]: '',
@@ -67,13 +57,30 @@ describe('cache runner', () => {
 
     setInputsMock.mockRestore();
 
-    // make sure other calls do not generate errors
+    // call to save should also work
     await cache.run('save', 'npm');
+  });
+
+  it('should exit on invalid args', async () => {
+    // other calls do not generate errors
+    const mockExit = jest
+      .spyOn(process, 'exit')
+      // @ts-ignore
+      .mockImplementation(() => {});
+
     // incomplete arguments
     await cache.run();
     await cache.run('save');
+
     // bad arguments
     await cache.run('save', 'unknown-cache');
     await cache.run('unknown-action', 'unknown-cache');
+
+    setInputs({
+      [InputName.Caches]: 'non-existent',
+    });
+    await cache.run('save', 'npm');
+
+    expect(mockExit).toHaveBeenCalledTimes(5);
   });
 });
