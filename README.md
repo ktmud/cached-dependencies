@@ -1,6 +1,6 @@
 # setup-webapp
 
-![](https://github.com/ktmud/setup-webapp/workflows/Tests/badge.svg)
+[![](https://github.com/ktmud/setup-webapp/workflows/Tests/badge.svg)](https://github.com/ktmud/setup-webapp/actions?query=workflow%3ATests)
 
 A [Github Action](https://help.github.com/en/actions) to enable **multi-layer cache** and **command shorthands** for any workflow. Mostly useful for webapps where frontend and backend services need to be built separately.
 
