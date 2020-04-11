@@ -8,11 +8,11 @@ inputs:
   caches:
     required: false
     description: Config file with custom cache definitions
-    default: .github/workflows/caches.js
+    default: ${{ github.workspace }}/.github/workflows/caches.js
   bashlib:
     required: false
     description: Bash script used to define command shortcuts
-    default: .github/workflows/bashlib.sh
+    default: ${{ github.workspace }}/.github/workflows/bashlib.sh
   run:
     required: false
     description: Bash commands to run, can use bashlib shortcuts

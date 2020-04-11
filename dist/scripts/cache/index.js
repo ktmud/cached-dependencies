@@ -13049,9 +13049,9 @@ function loadCustomCacheConfigs() {
     return __awaiter(this, void 0, void 0, function* () {
         const customCachePath = core.getInput('caches') || constants_1.DefaultInputs.Caches;
         try {
+            console.log(`Reading cache configs from ${customCachePath}`);
             const customCache = yield Promise.resolve().then(() => __importStar(require(customCachePath)));
             Object.assign(caches_1.default, customCache.default);
-            core.debug(`Use cache configs from ${customCachePath}`);
         }
         catch (error) {
             if (customCachePath !== constants_1.DefaultInputs.Caches ||
@@ -13142,6 +13142,7 @@ function run(action = undefined, cacheName = undefined) {
         if (yield loadCustomCacheConfigs()) {
             const inputs = yield getCacheInputs(cacheName);
             if (inputs) {
+                console.log(`${action} cache for ${cacheName}...`);
                 yield exports.actions[action](inputs);
             }
             else {

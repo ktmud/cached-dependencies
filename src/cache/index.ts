@@ -23,9 +23,9 @@ const HASH_OPTION = { algorithm: 'sha256' };
 export async function loadCustomCacheConfigs() {
   const customCachePath = core.getInput('caches') || DefaultInputs.Caches;
   try {
+    console.log(`Reading cache configs from ${customCachePath}`);
     const customCache = await import(customCachePath);
     Object.assign(caches, customCache.default);
-    core.debug(`Use cache configs from ${customCachePath}`);
   } catch (error) {
     if (
       customCachePath !== DefaultInputs.Caches ||
@@ -111,6 +111,7 @@ export async function run(
   if (await loadCustomCacheConfigs()) {
     const inputs = await getCacheInputs(cacheName);
     if (inputs) {
+      console.log(`${action} cache for ${cacheName}...`)
       await actions[action as ActionChoice](inputs);
     } else {
       core.setFailed(`Cache "${cacheName}" not defined, failed to ${action}.`);
