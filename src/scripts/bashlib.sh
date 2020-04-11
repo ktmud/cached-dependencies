@@ -13,12 +13,12 @@ print-cachescript-path() {
   echo $cacheScript
 }
 
-cache-save() {
-  node $cacheScript save $1
-}
-
 cache-restore() {
   node $cacheScript restore $1
+}
+
+cache-save() {
+  node $cacheScript save $1
 }
 
 # install python packages
