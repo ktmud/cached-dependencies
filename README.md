@@ -117,7 +117,6 @@ If one or more of your commands must spread across multiple lines, you can add a
       cache-save cypress
 ```
 
-### License
+## License
 
 The scripts and documentation in this project are released under [the MIT License](LICENSE).
-
