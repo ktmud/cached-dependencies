@@ -19,7 +19,7 @@
     "superset"
   ],
   "dependencies": {
-    "@actions/cache": "cypress-io/github-actions-cache#8bec6cc",
+    "@actions/cache": "cypress-io/github-actions-cache#bc821d0",
     "@actions/core": "1.2.3",
     "@actions/exec": "1.0.3",
     "@actions/glob": "0.1.0",
