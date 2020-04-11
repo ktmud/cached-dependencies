@@ -1,5 +1,7 @@
 # setup-webapp
 
+![](https://github.com/ktmud/setup-webapp/workflows/Tests/badge.svg)
+
 A [Github Action](https://help.github.com/en/actions) to enable **multi-layer cache** and **command shorthands** for any workflow. Mostly useful for webapps where frontend and backend services need to be built separately.
 
 Using predefined shortcuts and cache layers, you can split workflows and manage caches with minimal redudant code.
