@@ -1,0 +1,25 @@
+name: Setup Web App
+description: Setup web apps with multi-layer cache and command shortcuts
+author: Jesse Yang <hello@yjc.me>
+branding:
+  icon: 'truck'
+  color: 'yellow'
+inputs:
+  caches:
+    required: false
+    description: Config file with custom cache definitions
+    default: .github/workflows/caches.js
+  bashlib:
+    required: false
+    description: Bash script used to define command shortcuts
+    default: .github/workflows/bashlib.sh
+  run:
+    required: false
+    description: Bash commands to run, can use bashlib shortcuts
+    default: default-setup-command
+  parallel:
+    required: false
+    description: Whether to run commands in parallel
+runs:
+  using: 'node12'
+  main: 'dist/run'
