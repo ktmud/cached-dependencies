@@ -20,24 +20,24 @@
   ],
   "dependencies": {
     "@actions/cache": "actions/cache#eb78578266b7cec649ab65b6f1534bd6040c838b",
-    "@actions/core": "^1.2.0",
-    "@actions/exec": "^1.0.3",
+    "@actions/core": "1.2.0",
+    "@actions/exec": "1.0.3",
     "@actions/setup-python": "actions/setup-python#4ff1108c39d694f52d6bc366cc6a9e0b6cec890c",
-    "@types/uuid": "^7.0.2",
-    "hasha": "^5.2.0"
+    "@types/uuid": "7.0.2",
+    "hasha": "5.2.0"
   },
   "devDependencies": {
-    "@types/jest": "^24.0.23",
-    "@types/node": "^12.7.12",
-    "@typescript-eslint/eslint-plugin": "^2.27.0",
-    "@typescript-eslint/parser": "^2.27.0",
-    "@zeit/ncc": "^0.22.1",
-    "eslint": "^6.6.0",
-    "eslint-plugin-jest": "^23.8.2",
-    "jest": "^25.3.0",
-    "js-yaml": "^3.13.1",
-    "prettier": "^1.19.1",
-    "ts-jest": "^25.3.1",
-    "typescript": "^3.8.3"
+    "@types/jest": "24.9.1",
+    "@types/node": "12.12.35",
+    "@typescript-eslint/eslint-plugin": "2.27.0",
+    "@typescript-eslint/parser": "2.27.0",
+    "@zeit/ncc": "0.22.1",
+    "eslint": "6.8.0",
+    "eslint-plugin-jest": "23.8.2",
+    "jest": "25.3.0",
+    "js-yaml": "3.13.1",
+    "prettier": "1.19.1",
+    "ts-jest": "25.3.1",
+    "typescript": "3.8.3"
   }
 }
