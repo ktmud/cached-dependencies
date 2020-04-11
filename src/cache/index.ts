@@ -5,8 +5,10 @@ import * as core from '@actions/core';
 import * as glob from '@actions/glob';
 import * as fs from 'fs';
 import hasha from 'hasha';
-import saveCache from '@actions/cache/dist/save';
-import restoreCache from '@actions/cache/dist/restore';
+// @ts-ignore
+import { saveCache } from '@actions/cache/lib/save-fn';
+// @ts-ignore
+import { restoreCache } from '@actions/cache/lib/restore-fn';
 import caches from './caches'; // default cache configs
 import { Inputs, InputName, DefaultInputs } from '../constants';
 import { applyInputs } from '../utils/inputs';
@@ -23,9 +25,9 @@ const HASH_OPTION = { algorithm: 'sha256' };
 export async function loadCustomCacheConfigs() {
   const customCachePath = core.getInput('caches') || DefaultInputs.Caches;
   try {
-    console.log(`Reading cache configs from ${customCachePath}`);
     const customCache = await import(customCachePath);
     Object.assign(caches, customCache.default);
+    core.debug(`Use cache configs from ${customCachePath}`);
   } catch (error) {
     if (
       customCachePath !== DefaultInputs.Caches ||
@@ -111,7 +113,7 @@ export async function run(
   if (await loadCustomCacheConfigs()) {
     const inputs = await getCacheInputs(cacheName);
     if (inputs) {
-      console.log(`${action} cache for ${cacheName}...`)
+      core.info(`${action} cache for ${cacheName}...`)
       await actions[action as ActionChoice](inputs);
     } else {
       core.setFailed(`Cache "${cacheName}" not defined, failed to ${action}.`);
