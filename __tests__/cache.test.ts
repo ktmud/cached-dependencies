@@ -62,6 +62,10 @@ describe('cache runner', () => {
   it('should run saveCache', async () => {
     // call to save should also work
     const logWarningMock = jest.spyOn(actionUtils, 'logWarning');
+
+    setInputs({
+      [InputName.Parallel]: 'true',
+    });
     await cache.run('save', 'npm');
     expect(logWarningMock).toHaveBeenCalledWith(
       'Cache Service Url not found, unable to restore cache.',
