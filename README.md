@@ -8,6 +8,13 @@ Manage multiple cache targets in one step. Use either the built-in cache configs
 
 This is your all-in-one action for everything related to setting up dependencies with cache.
 
+## Inputs
+
+- **run**: bash commands to run, allows shortcut commands
+- **caches**: path to a JS module that defines cache targets, defaults to `.github/workflows/caches.js`
+- **bashlib**: path to a BASH scripts that defines shortcut commands, defaults to `.github/workflows/bashlib.sh`
+- **parallel**: whether to run the commands in parallel with node subprocesses
+
 ## Examples
 
 Following workflow sets up dependencies for a typical Python web app with both `~/.pip` and `~/.npm` cache configured in one simple step:
@@ -35,31 +42,18 @@ Here we used predefined `npm-install` and `pip-install` commands to install depe
 You may also replace `npm-install` with `yarn-install` to install npm pacakges with `yarn.lock`.
 
 ```yaml
-jobs:
-  build_and_test:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
-    - name: Install dependencies
-      uses: ktmud/cached-dependencies@v1
-      with:
-        run: |
-          yarn-install
-          yarn build
+- name: Install dependencies
+  uses: ktmud/cached-dependencies@v1
+  with:
+    run: |
+      yarn-install
+      yarn build
 
-          pip-install
-          python ./bin/manager.py fill_test_data
+      pip-install
+      python ./bin/manager.py fill_test_data
 ```
 
-To understand how the caches are defined, check [#cache-configs](https://github.com/ktmud/cached-dependencies#cache-configs).
-
-## Inputs
-
-- **run**: bash commands to run, allows shortcut commands
-- **parallel**: if to ru nthe commands in parallel with node subprocesses
-- **bashlib**: path to a BASH scripts that defines shortcut commands
-- **caches**: path to a JS module that defines cache targets
+See below for more details.
 
 ## Usage
 
@@ -93,7 +87,7 @@ module.exports = {
 }
 ```
 
-In which `hashFiles` and `keyPrefix` will be used to compute the `key` input used in [@actions/cache](https://github.com/marketplace/actions/cache). `keyPrefix` will default to the cache name and `restoreKeys` will default to `keyPrefix` if not specified.
+In which `hashFiles` and `keyPrefix` will be used to compute the primary cache key used in [@actions/cache](https://github.com/marketplace/actions/cache). `keyPrefix` will default to `${cacheName}-` and `restoreKeys` will default to `keyPrefix` if not specified.
 
 It is recommended to always use absolute paths in these configs so you can share them across different worflows more easily (in case you the action is called from different working directories).
 
@@ -118,7 +112,7 @@ steps:
 
 ### Shortcut commands
 
-All predefined shortcut commands can be found [here](https://github.com/ktmud/cached-dependencies/blob/master/src/scripts/bashlib.sh). You can customize them or add new ones in `.github/workflows/bashlib.sh`.
+All predefined shortcut commands can be found [here](https://github.com/ktmud/cached-dependencies/blob/master/src/scripts/bashlib.sh). You can also customize them or add new ones in `.github/workflows/bashlib.sh`.
 
 For example, if you want to install additional packages for before saving `pip` cache, simply add this to the `bashlib.sh` file:
 
