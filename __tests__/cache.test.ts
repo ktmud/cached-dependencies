@@ -1,6 +1,7 @@
 import path from 'path';
 import * as cache from '../src/cache';
 import * as inputsUtils from '../src/utils/inputs';
+import * as actionUtils from '@actions/cache/src/utils/actionUtils';
 import { setInputs } from '../src/utils/inputs';
 import { InputName, GitHubEvent, EnvVariable } from '../src/constants';
 import caches, { npmHashFiles, npmExpectedHash } from './fixtures/caches';
@@ -56,9 +57,15 @@ describe('cache runner', () => {
     });
 
     setInputsMock.mockRestore();
+  });
 
+  it('should run saveCache', async () => {
     // call to save should also work
+    const logWarningMock = jest.spyOn(actionUtils, 'logWarning');
     await cache.run('save', 'npm');
+    expect(logWarningMock).toHaveBeenCalledWith(
+      'Cache Service Url not found, unable to restore cache.',
+    );
   });
 
   it('should exit on invalid args', async () => {

@@ -1,5 +1,5 @@
-name: Setup Web App
-description: Setup web apps with multi-layer cache and command shortcuts
+name: Cached Dependencies
+description: Setup your apps with multi-layered cache and command shortcuts
 author: Jesse Yang <hello@yjc.me>
 branding:
   icon: 'truck'
@@ -7,19 +7,19 @@ branding:
 inputs:
   caches:
     required: false
-    description: Config file with custom cache definitions
+    description: JS module where you define your own caches
     default: ${{ github.workspace }}/.github/workflows/caches.js
   bashlib:
     required: false
-    description: Bash script used to define command shortcuts
+    description: Bash script where you define command shortcuts
     default: ${{ github.workspace }}/.github/workflows/bashlib.sh
   run:
     required: false
-    description: Bash commands to run, can use bashlib shortcuts
+    description: Bash commands to run, use the shortcuts defined in bashlib
     default: default-setup-command
   parallel:
     required: false
-    description: Whether to run commands in parallel
+    description: Whether to run commands in parallel with `Promise.all`
 runs:
   using: node12
   main: dist/index.js

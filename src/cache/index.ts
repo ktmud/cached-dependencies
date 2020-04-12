@@ -1,15 +1,20 @@
 /**
  * Execute @actions/cache with predefined cache configs.
  */
+import { beginImport, doneImport } from './patch'; // monkey patch @actions modules
+
+beginImport();
+import saveCache from '@actions/cache/src/save';
+import restoreCache from '@actions/cache/src/restore';
+doneImport();
+
+import hasha from 'hasha';
+import * as fs from 'fs';
 import * as core from '@actions/core';
 import * as glob from '@actions/glob';
-import * as fs from 'fs';
-import hasha from 'hasha';
-import saveCache from '@actions/cache/dist/save';
-import restoreCache from '@actions/cache/dist/restore';
-import caches from './caches'; // default cache configs
 import { Inputs, InputName, DefaultInputs } from '../constants';
 import { applyInputs } from '../utils/inputs';
+import caches from './caches'; // default cache configs
 
 // GitHub uses `sha256` for the built-in `${{ hashFiles(...) }}` expression
 // https://help.github.com/en/actions/reference/context-and-expression-syntax-for-github-actions#hashfiles
@@ -18,12 +23,12 @@ const HASH_OPTION = { algorithm: 'sha256' };
 /**
  * Load custom cache configs from the `caches` path defined in inputs.
  *
- * @returns {boolean} Whether the loading is successfull.
+ * @returns Whether the loading is successfull.
  */
 export async function loadCustomCacheConfigs() {
   const customCachePath = core.getInput('caches') || DefaultInputs.Caches;
   try {
-    console.log(`Reading cache configs from ${customCachePath}`);
+    core.debug(`Reading cache configs from '${customCachePath}'`);
     const customCache = await import(customCachePath);
     Object.assign(caches, customCache.default);
   } catch (error) {
@@ -32,9 +37,8 @@ export async function loadCustomCacheConfigs() {
       !error.message.includes('Cannot find module')
     ) {
       core.error(error.message);
-      core.setFailed(`Failed to load custom cache configs: ${customCachePath}`);
-      process.exit(1);
-      return false;
+      core.setFailed(`Failed to load custom cache configs: '${customCachePath}'`);
+      return process.exit(1);
     }
   }
   return true;
@@ -111,10 +115,10 @@ export async function run(
   if (await loadCustomCacheConfigs()) {
     const inputs = await getCacheInputs(cacheName);
     if (inputs) {
-      console.log(`${action} cache for ${cacheName}...`)
+      core.info(`${action.toUpperCase()} cache for ${cacheName}...`);
       await actions[action as ActionChoice](inputs);
     } else {
-      core.setFailed(`Cache "${cacheName}" not defined, failed to ${action}.`);
+      core.setFailed(`Cache '${cacheName}' not defined, failed to ${action}.`);
       process.exit(1);
     }
   }

@@ -1,14 +1,16 @@
-# setup-webapp
+# cached-dependencies
 
 [![](https://github.com/ktmud/setup-webapp/workflows/Tests/badge.svg)](https://github.com/ktmud/setup-webapp/actions?query=workflow%3ATests) [![codecov](https://codecov.io/gh/ktmud/setup-webapp/branch/master/graph/badge.svg)](https://codecov.io/gh/ktmud/setup-webapp)
 
-Enable **multi-layer cache** and **command shorthands** in any workflows. Mostly useful for webapps where frontend and backend services are built separately.
+Enable **multi-layer cache** and **command shorthands** in any workflows. Mostly useful for building webapps that require separate caches for frontend and backend dependencies.
 
-Using predefined shortcuts and cache layers, you can easily split workflows and manage caches with minimal redudant code.
+By using the built-in or your own predefined shortcuts and cache layers, it is now easier than ever to split workflows and manage caches with minimal redudencies.
 
-## Example
+## Usage
 
-A simple Python app that setups pip cache and npm cache at the same time:
+### Getting started
+
+Let's set up a simple Python app with both `pip` and `npm` cache in one simple step:
 
 ```yaml
 jobs:
@@ -19,7 +21,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
     - name: Install dependencies
-      uses: ktmud/setup-webapp@v1
+      uses: ktmud/cached-dependencies@v1
       with:
         parallel: true
         run: |
@@ -32,9 +34,12 @@ jobs:
 
 Here, the predefined `npm-install`, `npm-build` and `pip-install` commands will automatically manage `npm` and `pip` cache for you. They are also running in parallel by `node` child processes, so things can be even faster.
 
-Of course, you can customize these commands or add new ones. Simply edit `.github/workflows/bashlib.sh` and override these commands:
+### Command shortcuts
+
+Of course, you can customize these command shortcuts or add new ones. Simply edit `.github/workflows/bashlib.sh`:
 
 ```bash
+# override the default `pip-install` command
 pip-install() {
   cd $GITHUB_WORKSPACE
 
@@ -55,12 +60,14 @@ npm-install() {
   cd $GITHUB_WORKSPACE/client/
 
   cache-restore npm
-  npm ci
+  yarn  # use yarn instead of npm
   cache-save npm
 }
 ```
 
-The `cache-restore` and `cache-save` uses [actions/cache](https://github.com/actions/cache) to manage caches. `npm` and `pip` are two predefined cache layers with following configs:
+### Cached layers
+
+The `cache-restore` and `cache-save` uses [actions/cache](https://github.com/actions/cache) to manage caches. `npm` and `pip` are the name of two predefined cache layers with following configs:
 
 ```js
 {
@@ -72,16 +79,29 @@ The `cache-restore` and `cache-save` uses [actions/cache](https://github.com/act
   },
   npm: {
     path: ['~/.npm'],
-    hashFiles: ['package-lock.json'],
+    hashFiles: [`package-lock.json`],
     keyPrefix: 'npm-',
     restoreKeys: 'npm-',
   },
 }
 ```
 
-You can override these by editing `.github/workflows/caches.js`.
+You can override these by editing `.github/workflows/caches.js`. For example, if you want to use `yarn.lock` instead of `package-lock.json`:
 
-### Override default commands
+```js
+module.exports = {
+  npm: {
+    path: ['~/.npm'],
+    hashFiles: [`${process.env.GITHUB_WORKSPACE}/yarn.lock`],
+    keyPrefix: 'npm-',
+    restoreKeys: 'npm-',
+  },
+}
+```
+
+Don't forget to also update the `npm-install` shortcut as shown in previous section.
+
+### Default setup command
 
 When `run` is not provided:
 
@@ -90,10 +110,10 @@ jobs:
   name: Test Job
   steps:
     - name: Install dependencies
-      uses: ktmud/setup-webapp@v
+      uses: ktmud/cached-depdencies@v1
 ```
 
-You must specify `default-setup-command` in `.github/workflows/bashlib.sh`. For example, you can try to install pip and npm at the same time:
+You must configure a `default-setup-command` in `.github/workflows/bashlib.sh`. For example, we can install pip and npm at the same time:
 
 ```bash
 default-setup-command() {
@@ -101,17 +121,15 @@ default-setup-command() {
 }
 ```
 
-### Use different config location
+### Use different config locations
 
-Both the two config files above can be placed in other locations:
+Both the two config files, `.github/workflows/bashlib.sh` and `.github/workflows/caches.js`, can be placed in other locations:
 
 ```yaml
-- uses: ktmud/setup-webapp@v1
+- uses: ktmud/cached-dependencies@v1
   with:
-    run: |
-      npm-install
-      npm-build
-      pip-install
+    caches: ${{ github.workspace }}/.github/configs/caches.js
+    bashlib: ${{ github.workspace }}/.github/configs/bashlib.sh
 ```
 
 ### Run commands in parallel
@@ -121,7 +139,7 @@ When `parallel` is set to `true`, the `run` inputs will be split into an array o
 If one or more of your commands must spread across multiple lines, you can add a new line between the parallel commands. Each command within a parallel group will still run sequentially.
 
 ```yaml
-- uses: ktmud/setup-webapp@v1
+- uses: ktmud/cache-dependencies@v1
   with:
     run: |
       cache-restore pip

@@ -2,12 +2,18 @@
   "compilerOptions": {
     "target": "es6",
     "module": "commonjs",
+    "lib": ["esnext"],
     "moduleResolution": "node",
     "outDir": "./lib",
-    "rootDir": "./src",
+    "rootDir": ".",
     "strict": true,
     "noImplicitAny": true,
     "esModuleInterop": true,
+    "preserveSymlinks": true,
   },
-  "exclude": ["node_modules", "**/*.test.ts", "__tests__"]
+  "include": [
+    "./src",
+    "./node_modules/@actions"
+  ],
+  "exclude": ["**/*.test.ts", "__tests__"]
 }
