@@ -4021,14 +4021,37 @@ module.exports = function nodeRNG() {
 /***/ }),
 
 /***/ 494:
-/***/ (function(__unusedmodule, exports) {
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
 
 "use strict";
 
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
+    result["default"] = mod;
+    return result;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
+/**
+ * Default cache configs
+ */
+const os = __importStar(__webpack_require__(87));
+const platform = os.platform();
+const pathByPlatform = {
+    linux: {
+        pip: [`${process.env.HOME}/.cache/pip`],
+    },
+    darwin: {
+        pip: [`${process.env.HOME}/Library/Caches/pip`],
+    },
+    win32: {
+        pip: [`${process.env.HOME}\\AppData\\Local\\pip\\Cache`],
+    },
+};
 exports.default = {
     pip: {
-        path: [`${process.env.HOME}/.pip`],
+        path: pathByPlatform[platform].pip,
         hashFiles: ['requirements*.txt'],
     },
     npm: {

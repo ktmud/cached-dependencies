@@ -40,12 +40,12 @@ There is also a `yarn-install` command which handles installing npm pacakges wit
 
 ### Cache configs
 
-Under the hood, this action uses [@actions/cache](https://github.com/marketplace/actions/cache] to manage the cache storage. But instead of being able to defining only one cache at a time and specify the configs in the `yaml` file, you manage all caches in a spearate JS file: `.github/workflows/caches.js`. Here is what's used in default:
+Under the hood, this action uses [@actions/cache](https://github.com/marketplace/actions/cache] to manage the cache storage. But instead of being able to defining only one cache at a time and specify the configs in the `yaml` file, you manage all caches in a spearate JS file: `.github/workflows/caches.js`. Here is [what's used in default](https://github.com/ktmud/cached-dependencies/blob/master/src/cache/caches.ts) for Linux:
 
 ```js
 module.exports = {
   pip: {
-    path: [`${process.env.HOME}/.pip`],
+    path: [`${process.env.HOME}/.cache/pip`],
     hashFiles: ['requirements*.txt'],
     keyPrefix: 'pip-',
     restoreKeys: 'pip-',

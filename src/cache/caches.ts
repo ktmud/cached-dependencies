@@ -1,6 +1,8 @@
-/*
+/**
  * Default cache configs
  */
+import * as os from 'os';
+
 export interface CacheConfig {
   path: string[];
   hashFiles: string[];
@@ -12,9 +14,22 @@ export interface CacheConfigs {
   [cacheName: string]: CacheConfig;
 }
 
+const platform = os.platform() as 'linux' | 'darwin' | 'win32';
+const pathByPlatform = {
+  linux: {
+    pip: [`${process.env.HOME}/.cache/pip`],
+  },
+  darwin: {
+    pip: [`${process.env.HOME}/Library/Caches/pip`],
+  },
+  win32: {
+    pip: [`${process.env.HOME}\\AppData\\Local\\pip\\Cache`],
+  },
+};
+
 export default {
   pip: {
-    path: [`${process.env.HOME}/.pip`],
+    path: pathByPlatform[platform].pip,
     hashFiles: ['requirements*.txt'],
   },
   npm: {
