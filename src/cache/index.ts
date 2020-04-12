@@ -37,7 +37,9 @@ export async function loadCustomCacheConfigs() {
       !error.message.includes('Cannot find module')
     ) {
       core.error(error.message);
-      core.setFailed(`Failed to load custom cache configs: '${customCachePath}'`);
+      core.setFailed(
+        `Failed to load custom cache configs: '${customCachePath}'`,
+      );
       return process.exit(1);
     }
   }
@@ -112,14 +114,16 @@ export async function run(
     core.setFailed(`Must provide a cache name.`);
     return process.exit(1);
   }
+
+  core.startGroup(`${action.toUpperCase()} cache for ${cacheName}...`);
   if (await loadCustomCacheConfigs()) {
     const inputs = await getCacheInputs(cacheName);
     if (inputs) {
-      core.info(`${action.toUpperCase()} cache for ${cacheName}...`);
       await actions[action as ActionChoice](inputs);
     } else {
       core.setFailed(`Cache '${cacheName}' not defined, failed to ${action}.`);
       process.exit(1);
     }
   }
+  core.endGroup();
 }
