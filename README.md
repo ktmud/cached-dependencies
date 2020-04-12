@@ -89,7 +89,7 @@ steps:
     parallel: true
     run: |
       cache-restore npm
-      npm restore
+      npm install
       cache-save npm
 
       cache-restore pip
