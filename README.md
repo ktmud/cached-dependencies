@@ -2,9 +2,9 @@
 
 [![](https://github.com/ktmud/cached-dependencies/workflows/Tests/badge.svg)](https://github.com/ktmud/cached-dependencies/actions?query=workflow%3ATests) [![codecov](https://codecov.io/gh/ktmud/cached-dependencies/branch/master/graph/badge.svg)](https://codecov.io/gh/ktmud/cached-dependencies)
 
-Enable **multi-layer cache** and **command shorthands** in any workflows. Mostly useful for building webapps that require separate caches for frontend and backend dependencies.
+Enable **multi-layer cache** and **command shorthands** in any workflows.
 
-By using the built-in or your own predefined shortcuts and cache layers, it is now easier than ever to split workflows and manage caches with minimal redudencies.
+Use either the built-in cache configs for `npm`, `yarn`, and `pip`, or write your own. Create a bash command library to easily reduce redudencies across workflows. Most useful for building webapps that require multi-stage building processes.
 
 ## Usage
 
@@ -134,7 +134,7 @@ When `parallel` is set to `true`, the `run` inputs will be split into an array o
 If one or more of your commands must spread across multiple lines, you can add a new line between the parallel commands. Each command within a parallel group will still run sequentially.
 
 ```yaml
-- uses: ktmud/cache-dependencies@v1
+- uses: ktmud/cached-dependencies@v1
   with:
     run: |
       cache-restore pip
