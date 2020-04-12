@@ -25,7 +25,8 @@ cache-save() {
 pip-install() {
   cache-restore pip
   echo "::group::Install Python pacakges"
-  pip install -r requirements.txt
+  pip install -r requirements.txt # install dependencies
+  pip install -e . # install current directory as editable python package
   echo "::endgroup"
   cache-save pip
 }

@@ -33,7 +33,7 @@ function loadStates() {
       states,
       JSON.parse(fs.readFileSync(stateStore, { encoding: 'utf-8' })),
     );
-    core.info(`Load states from: ${stateStore}`)
+    core.debug(`Loaded states from: ${stateStore}`)
   } catch (error) {
     // pass
     if (error.code !== 'ENOENT') {

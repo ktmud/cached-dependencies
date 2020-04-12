@@ -2,22 +2,19 @@
 
 [![](https://github.com/ktmud/cached-dependencies/workflows/Tests/badge.svg)](https://github.com/ktmud/cached-dependencies/actions?query=workflow%3ATests) [![codecov](https://codecov.io/gh/ktmud/cached-dependencies/branch/master/graph/badge.svg)](https://codecov.io/gh/ktmud/cached-dependencies)
 
-Enable **multi-layer cache** and **command shorthands** in any workflows.
+Enable **multi-layer cache** and **shortcut commands** in any workflows.
 
 Manage multiple cache targets in one step. Use either the built-in cache configs for npm, yarn, and pip, or write your own. Create a bash command library to easily reduce redudencies across workflows. Most useful for building webapps that require multi-stage building processes.
 
 This is your all-in-one action for everything related to setting up dependencies with cache.
 
-## Usage
+## Example
 
-### Getting started
-
-Let's set up a simple Python app with both `~/.pip` and `~/.npm` cached in one simple step:
+Following workflow sets up dependencies for a typical Python web app with both `~/.pip` and `~/.npm` cache configured in one simple step:
 
 ```yaml
 jobs:
-  cypress:
-    name: Cypress
+  build_and_test:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
@@ -28,19 +25,30 @@ jobs:
         parallel: true
         run: |
           npm-install
-          npm-build
+          npm run build
 
           pip-install
           python ./bin/manager.py fill_test_data
 ```
 
-Here, the predefined `npm-install`, `npm-build` and `pip-install` commands will automatically manage `npm` and `pip` cache for you. They are also running in parallel by `node` child processes, so things can be even faster.
+Here we used predefined `npm-install` and `pip-install` commands to install dependencies with correponding caches. Thanks to the input `parallel: true`, they will also run in parallel to save you even more time.
 
-There is also a `yarn-install` command which handles installing npm pacakges with `yarn`.
+You may also replace `npm-install` with `yarn-install` to install npm pacakges with `yarn.lock`.
+
+## Inputs
+
+- **run**: bash commands to run, allows shortcut commands
+- **parallel**: if to ru nthe commands in parallel with node subprocesses
+- **bashlib**: path to a BASH scripts that defines shortcut commands
+- **caches**: path to a JS module that defines cache targets
+
+## Usage
 
 ### Cache configs
 
-Under the hood, this action uses [@actions/cache](https://github.com/marketplace/actions/cache] to manage the cache storage. But instead of being able to defining only one cache at a time and specify the configs in the `yaml` file, you manage all caches in a spearate JS file: `.github/workflows/caches.js`. Here is [what's used in default](https://github.com/ktmud/cached-dependencies/blob/master/src/cache/caches.ts) for Linux:
+Under the hood, we use [@actions/cache](https://github.com/marketplace/actions/cache) to manage cache storage. But instead of defining only one cache at a time and specify them in workflow YAMLs, you manage all caches in a spearate JS file: `.github/workflows/caches.js`.
+
+Here is [the default configuration](https://github.com/ktmud/cached-dependencies/blob/master/src/cache/caches.ts) for Linux:
 
 ```js
 module.exports = {
@@ -65,11 +73,13 @@ module.exports = {
 }
 ```
 
-In which `hashFiles` and `keyPrefix` will be used to compute the `key` input used in [@actions/cache](https://github.com/marketplace/actions/cache). `restoreKeys` will defaults to be `keyPrefix` if not specified.
+In which `hashFiles` and `keyPrefix` will be used to compute the `key` input used in [@actions/cache](https://github.com/marketplace/actions/cache). `restoreKeys` will defaults to `keyPrefix` if not specified.
 
-It is recommended to always use absolute paths in these configs so you can share the configs across different worflows more easily (in case you want to start the action in different working directories).
+It is recommended to always use absolute paths in these configs so you can share them across different worflows more easily (in case you the action is called from different working directories).
 
-To use the caches, utilize the predefined `cache-store` and `cache-save` commands:
+#### Speficy when to restore and save
+
+With the predefined `cache-store` and `cache-save` bash commands, you have full flexibility on when to restore and save cache:
 
 ```yaml
 steps:
@@ -87,11 +97,11 @@ steps:
       cache-save pip
 ```
 
-### Command shortcuts
+### Shortcut commands
 
-As aforementioned, you can define command shortcuts to be used in the `run` input. All the predefined shortcuts can be found [here](https://github.com/ktmud/cached-dependencies/blob/master/src/scripts/bashlib.sh).
+All predefined shortcut commands can be found [here](https://github.com/ktmud/cached-dependencies/blob/master/src/scripts/bashlib.sh). You can customize them or add new ones in `.github/workflows/bashlib.sh`.
 
-You can customize these shortcuts or add new shortcuts in `.github/workflows/bashlib.sh`. For example, if you want to install additional packages for `pip`, simply add this to the bashlib file:
+For example, if you want to install additional packages for before saving `pip` cache, simply add this to the `bashlib.sh` file:
 
 ```bash
 # override the default `pip-install` command
@@ -101,11 +111,9 @@ pip-install() {
   cache-restore pip
 
   echo "::group::pip install"
-  pip install -r requirements.txt
-
-  # install additional pip packages
-  pip install -r requirements-dev.txt
-  pip install -e ".[postgres,mysql]"
+  pip install -r requirements.txt      # prod requirements
+  pip install -r requirements-dev.txt  # dev requirements
+  pip install -e ".[postgres,mysql]"   # current pacakge with some extras
   echo "::endgroup::"
 
   cache-save pip
@@ -147,7 +155,25 @@ Both the two config files, `.github/workflows/bashlib.sh` and `.github/workflows
 
 ### Run commands in parallel
 
-When `parallel` is set to `true`, the `run` inputs will be split into an array of commands and passed to `Promise.all(...)` to execute in parallel.
+When `parallel` is set to `true`, the `run` input will be split into an array of commands and passed to `Promise.all(...)` to execute in parallel. For example,
+
+```yaml
+- uses: ktmud/cached-dependencies@v1
+  with:
+    parallel: true
+    run: |
+      pip-install
+      npm-install
+```
+
+is equivalent to
+
+```yaml
+- uses: ktmud/cached-dependencies@v1
+  with:
+    run: |
+      pip-install & npm-install
+```
 
 If one or more of your commands must spread across multiple lines, you can add a new line between the parallel commands. Each command within a parallel group will still run sequentially.
 
@@ -167,6 +193,7 @@ If one or more of your commands must spread across multiple lines, you can add a
       cd cypress/ && npm install
       cache-save cypress
 ```
+
 
 ## License
 
