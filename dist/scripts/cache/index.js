@@ -4037,16 +4037,17 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * Default cache configs
  */
 const os = __importStar(__webpack_require__(87));
+const { HOME = '', GITHUB_WORKSPACE = '' } = process.env;
 const platform = os.platform();
 const pathByPlatform = {
     linux: {
-        pip: [`${process.env.HOME}/.cache/pip`],
+        pip: [`${HOME}/.cache/pip`],
     },
     darwin: {
-        pip: [`${process.env.HOME}/Library/Caches/pip`],
+        pip: [`${HOME}/Library/Caches/pip`],
     },
     win32: {
-        pip: [`${process.env.HOME}\\AppData\\Local\\pip\\Cache`],
+        pip: [`${HOME}\\AppData\\Local\\pip\\Cache`],
     },
 };
 exports.default = {
@@ -4055,12 +4056,17 @@ exports.default = {
         hashFiles: ['requirements*.txt'],
     },
     npm: {
-        path: [`${process.env.HOME}/.npm`],
-        hashFiles: [`${process.env.HOME}/package-lock.json`],
+        path: [`${HOME}/.npm`],
+        hashFiles: [
+            `package-lock.json`,
+            // support lerna monorepo with depth=2
+            `*/*/package-lock.json`,
+            `!node_modules/*/package-lock.json`,
+        ],
     },
     yarn: {
-        path: [`${process.env.HOME}/.npm`],
-        hashFiles: [`${process.env.HOME}/yarn.lock`],
+        path: [`${HOME}/.npm`],
+        hashFiles: [`yarn.lock`, `*/*/yarn.lock`, `!node_modules/*/yarn.lock`],
     },
 };
 

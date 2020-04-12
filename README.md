@@ -8,7 +8,7 @@ Manage multiple cache targets in one step. Use either the built-in cache configs
 
 This is your all-in-one action for everything related to setting up dependencies with cache.
 
-## Example
+## Examples
 
 Following workflow sets up dependencies for a typical Python web app with both `~/.pip` and `~/.npm` cache configured in one simple step:
 
@@ -22,7 +22,6 @@ jobs:
     - name: Install dependencies
       uses: ktmud/cached-dependencies@v1
       with:
-        parallel: true
         run: |
           npm-install
           npm run build
@@ -31,9 +30,29 @@ jobs:
           python ./bin/manager.py fill_test_data
 ```
 
-Here we used predefined `npm-install` and `pip-install` commands to install dependencies with correponding caches. Thanks to the input `parallel: true`, they will also run in parallel to save you even more time.
+Here we used predefined `npm-install` and `pip-install` commands to install dependencies with correponding caches.
 
 You may also replace `npm-install` with `yarn-install` to install npm pacakges with `yarn.lock`.
+
+```yaml
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+    - name: Install dependencies
+      uses: ktmud/cached-dependencies@v1
+      with:
+        run: |
+          yarn-install
+          yarn build
+
+          pip-install
+          python ./bin/manager.py fill_test_data
+```
+
+To understand how the caches are defined, check [#cache-configs](https://github.com/ktmud/cached-dependencies#cache-configs).
 
 ## Inputs
 
@@ -59,21 +78,22 @@ module.exports = {
     restoreKeys: 'pip-',
   },
   npm: {
-    path: [`${process.env.HOME}/.npm`],
-    hashFiles: [`package-lock.json`],
-    keyPrefix: 'npm-',
-    restoreKeys: 'npm-',
+    path: [`${HOME}/.npm`],
+    hashFiles: [
+      `package-lock.json`,
+      `*/*/package-lock.json`,
+      `!node_modules/*/package-lock.json`,
+    ],
   },
   yarn: {
-    path: [`${process.env.HOME}/.npm`],
-    hashFiles: [`yarn.lock`],
-    keyPrefix: 'yarn-',
-    restoreKeys: 'yarn-',
+    path: [`${HOME}/.npm`],
+   // */* is for supporting lerna monorepo with depth=2
+    hashFiles: [`yarn.lock`, `*/*/yarn.lock`, `!node_modules/*/yarn.lock`],
   },
 }
 ```
 
-In which `hashFiles` and `keyPrefix` will be used to compute the `key` input used in [@actions/cache](https://github.com/marketplace/actions/cache). `restoreKeys` will defaults to `keyPrefix` if not specified.
+In which `hashFiles` and `keyPrefix` will be used to compute the `key` input used in [@actions/cache](https://github.com/marketplace/actions/cache). `keyPrefix` will default to the cache name and `restoreKeys` will default to `keyPrefix` if not specified.
 
 It is recommended to always use absolute paths in these configs so you can share them across different worflows more easily (in case you the action is called from different working directories).
 
@@ -86,7 +106,6 @@ steps:
 - uses: actions/checkout@v2
 - uses: ktmud/cached-dependencies@v1
   with:
-    parallel: true
     run: |
       cache-restore npm
       npm install
