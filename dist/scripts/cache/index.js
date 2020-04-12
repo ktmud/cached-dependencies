@@ -4028,12 +4028,16 @@ module.exports = function nodeRNG() {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = {
     pip: {
-        path: ['~/.pip'],
+        path: [`${process.env.HOME}/.pip`],
         hashFiles: ['requirements*.txt'],
     },
     npm: {
-        path: ['~/.npm'],
-        hashFiles: ['package-lock.json'],
+        path: [`${process.env.HOME}/.npm`],
+        hashFiles: [`${process.env.HOME}/package-lock.json`],
+    },
+    yarn: {
+        path: [`${process.env.HOME}/.npm`],
+        hashFiles: [`${process.env.HOME}/yarn.lock`],
     },
 };
 
@@ -5153,10 +5157,13 @@ function run(action = undefined, cacheName = undefined) {
             return process.exit(1);
         }
         const runInParallel = inputs_1.getInput(constants_1.InputName.Parallel);
-        if (!runInParallel) {
-            core.startGroup(`${action.toUpperCase()} cache for ${cacheName}`);
-        }
         if (yield loadCustomCacheConfigs()) {
+            if (runInParallel) {
+                core.info(`${action.toUpperCase()} cache for ${cacheName}`);
+            }
+            else {
+                core.startGroup(`${action.toUpperCase()} cache for ${cacheName}`);
+            }
             const inputs = yield getCacheInputs(cacheName);
             if (inputs) {
                 core.info(JSON.stringify(inputs, null, 2));
@@ -5164,11 +5171,11 @@ function run(action = undefined, cacheName = undefined) {
             }
             else {
                 core.setFailed(`Cache '${cacheName}' not defined, failed to ${action}.`);
-                process.exit(1);
+                return process.exit(1);
             }
-        }
-        if (!runInParallel) {
-            core.endGroup();
+            if (!runInParallel) {
+                core.endGroup();
+            }
         }
     });
 }

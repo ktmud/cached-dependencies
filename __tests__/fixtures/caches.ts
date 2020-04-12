@@ -7,7 +7,7 @@ export const npmExpectedHash =
 
 export default {
   npm: {
-    path: ['~/.npm'],
+    path: [`${process.env.HOME}/.npm`],
     hashFiles: npmHashFiles,
     restoreKeys: ['npm-', 'node-npm-'],
   },

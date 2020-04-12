@@ -34,6 +34,8 @@ jobs:
 
 Here, the predefined `npm-install`, `npm-build` and `pip-install` commands will automatically manage `npm` and `pip` cache for you. They are also running in parallel by `node` child processes, so things can be even faster.
 
+There is also a `yarn-install` command which handles cache restore/save for npm pacakges, too, but creates the cache keys with `yarn.lock`, instead of `package-lock.json`.
+
 ### Command shortcuts
 
 Of course, you can customize these command shortcuts or add new ones. Simply edit `.github/workflows/bashlib.sh`:
@@ -44,24 +46,16 @@ pip-install() {
   cd $GITHUB_WORKSPACE
 
   cache-restore pip
-  pip install -r requirements*.txt
 
-  # install additional packages
+  echo "::group::pip install"
+  pip install -r requirements.txt
+
+  # install additional pip packages
+  pip install -r requirements-dev.txt
   pip install -e ".[postgres,mysql]"
+  echo "::endgroup::"
 
   cache-save pip
-}
-
-npm-install() {
-  echo "npm: $(npm --version)"
-  echo "node: $(node --version)"
-
-  # use a subfolder for the frontend code
-  cd $GITHUB_WORKSPACE/client/
-
-  cache-restore npm
-  yarn  # use yarn instead of npm
-  cache-save npm
 }
 ```
 

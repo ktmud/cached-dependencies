@@ -14,11 +14,15 @@ export interface CacheConfigs {
 
 export default {
   pip: {
-    path: ['~/.pip'],
+    path: [`${process.env.HOME}/.pip`],
     hashFiles: ['requirements*.txt'],
   },
   npm: {
-    path: ['~/.npm'],
-    hashFiles: ['package-lock.json'],
+    path: [`${process.env.HOME}/.npm`],
+    hashFiles: [`${process.env.HOME}/package-lock.json`],
+  },
+  yarn: {
+    path: [`${process.env.HOME}/.npm`],
+    hashFiles: [`${process.env.HOME}/yarn.lock`],
   },
 } as CacheConfigs;

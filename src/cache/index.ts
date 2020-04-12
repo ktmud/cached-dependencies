@@ -117,20 +117,22 @@ export async function run(
 
   const runInParallel = getInput(InputName.Parallel);
 
-  if (!runInParallel) {
-    core.startGroup(`${action.toUpperCase()} cache for ${cacheName}`);
-  }
   if (await loadCustomCacheConfigs()) {
+    if (runInParallel) {
+      core.info(`${action.toUpperCase()} cache for ${cacheName}`);
+    } else {
+      core.startGroup(`${action.toUpperCase()} cache for ${cacheName}`);
+    }
     const inputs = await getCacheInputs(cacheName);
     if (inputs) {
       core.info(JSON.stringify(inputs, null, 2));
       await actions[action as ActionChoice](inputs);
     } else {
       core.setFailed(`Cache '${cacheName}' not defined, failed to ${action}.`);
-      process.exit(1);
+      return process.exit(1);
     }
-  }
-  if (!runInParallel) {
-    core.endGroup();
+    if (!runInParallel) {
+      core.endGroup();
+    }
   }
 }
