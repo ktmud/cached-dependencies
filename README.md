@@ -4,13 +4,15 @@
 
 Enable **multi-layer cache** and **command shorthands** in any workflows.
 
-Use either the built-in cache configs for `npm`, `yarn`, and `pip`, or write your own. Create a bash command library to easily reduce redudencies across workflows. Most useful for building webapps that require multi-stage building processes.
+Manage multiple cache targets in one step. Use either the built-in cache configs for npm, yarn, and pip, or write your own. Create a bash command library to easily reduce redudencies across workflows. Most useful for building webapps that require multi-stage building processes.
+
+This is your all-in-one action for everything related to setting up dependencies with cache.
 
 ## Usage
 
 ### Getting started
 
-Let's set up a simple Python app with both `pip` and `npm` cache in one simple step:
+Let's set up a simple Python app with both `~/.pip` and `~/.npm` cached in one simple step:
 
 ```yaml
 jobs:
@@ -34,11 +36,62 @@ jobs:
 
 Here, the predefined `npm-install`, `npm-build` and `pip-install` commands will automatically manage `npm` and `pip` cache for you. They are also running in parallel by `node` child processes, so things can be even faster.
 
-There is also a `yarn-install` command which handles cache restore/save for npm pacakges, too, but creates the cache keys with `yarn.lock`, instead of `package-lock.json`.
+There is also a `yarn-install` command which handles installing npm pacakges with `yarn`.
+
+### Cache configs
+
+Under the hood, this action uses [@actions/cache](https://github.com/marketplace/actions/cache] to manage the cache storage. But instead of being able to defining only one cache at a time and specify the configs in the `yaml` file, you manage all caches in a spearate JS file: `.github/workflows/caches.js`. Here is what's used in default:
+
+```js
+module.exports = {
+  pip: {
+    path: [`${process.env.HOME}/.pip`],
+    hashFiles: ['requirements*.txt'],
+    keyPrefix: 'pip-',
+    restoreKeys: 'pip-',
+  },
+  npm: {
+    path: [`${process.env.HOME}/.npm`],
+    hashFiles: [`package-lock.json`],
+    keyPrefix: 'npm-',
+    restoreKeys: 'npm-',
+  },
+  yarn: {
+    path: [`${process.env.HOME}/.npm`],
+    hashFiles: [`yarn.lock`],
+    keyPrefix: 'yarn-',
+    restoreKeys: 'yarn-',
+  },
+}
+```
+
+In which `hashFiles` and `keyPrefix` will be used to compute the `key` input used in [@actions/cache](https://github.com/marketplace/actions/cache). `restoreKeys` will defaults to be `keyPrefix` if not specified.
+
+It is recommended to always use absolute paths in these configs so you can share the configs across different worflows more easily (in case you want to start the action in different working directories).
+
+To use the caches, utilize the predefined `cache-store` and `cache-save` commands:
+
+```yaml
+steps:
+- uses: actions/checkout@v2
+- uses: ktmud/cached-dependencies@v1
+  with:
+    parallel: true
+    run: |
+      cache-restore npm
+      npm restore
+      cache-save npm
+
+      cache-restore pip
+      pip install -r requirements.txt
+      cache-save pip
+```
 
 ### Command shortcuts
 
-Of course, you can customize these command shortcuts or add new ones. Simply edit `.github/workflows/bashlib.sh`:
+As aforementioned, you can define command shortcuts to be used in the `run` input. All the predefined shortcuts can be found [here](https://github.com/ktmud/cached-dependencies/blob/master/src/scripts/bashlib.sh).
+
+You can customize these shortcuts or add new shortcuts in `.github/workflows/bashlib.sh`. For example, if you want to install additional packages for `pip`, simply add this to the bashlib file:
 
 ```bash
 # override the default `pip-install` command
@@ -59,56 +112,19 @@ pip-install() {
 }
 ```
 
-### Cached layers
-
-The `cache-restore` and `cache-save` uses [actions/cache](https://github.com/actions/cache) to manage caches. `npm` and `pip` are the name of two predefined cache layers with following configs:
-
-```js
-{
-  pip: {
-    path: ['~/.pip'],
-    hashFiles: ['requirements*.txt'],
-    keyPrefix: 'pip-',
-    restoreKeys: 'pip-',
-  },
-  npm: {
-    path: ['~/.npm'],
-    hashFiles: [`package-lock.json`],
-    keyPrefix: 'npm-',
-    restoreKeys: 'npm-',
-  },
-}
-```
-
-You can override these by editing `.github/workflows/caches.js`. For example, if you want to use `yarn.lock` instead of `package-lock.json`:
-
-```js
-module.exports = {
-  npm: {
-    path: ['~/.npm'],
-    // It is recommended to always use absolute paths in these configs.
-    hashFiles: [`${process.env.GITHUB_WORKSPACE}/yarn.lock`],
-    keyPrefix: 'npm-',
-    restoreKeys: 'npm-',
-  },
-}
-```
-
-Don't forget to also update the `npm-install` shortcut as shown in previous section.
-
 ### Default setup command
 
 When `run` is not provided:
 
 ```yaml
 jobs:
-  name: Test Job
+  name: Build
   steps:
     - name: Install dependencies
       uses: ktmud/cached-depdencies@v1
 ```
 
-You must configure a `default-setup-command` in `.github/workflows/bashlib.sh`. For example, we can install pip and npm at the same time:
+You must provide a `default-setup-command` in the bashlib. For example,
 
 ```bash
 default-setup-command() {
@@ -116,7 +132,9 @@ default-setup-command() {
 }
 ```
 
-### Use different config locations
+This will start installing pip and npm dependencies at the same time.
+
+### Customize config locations
 
 Both the two config files, `.github/workflows/bashlib.sh` and `.github/workflows/caches.js`, can be placed in other locations:
 
@@ -152,4 +170,4 @@ If one or more of your commands must spread across multiple lines, you can add a
 
 ## License
 
-The scripts and documentation in this project are released under [the MIT License](LICENSE).
+This project is released under [the MIT License](LICENSE).
