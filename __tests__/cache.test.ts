@@ -1,9 +1,10 @@
 import path from 'path';
+import * as core from '@actions/core';
 import * as cache from '../src/cache';
 import * as inputsUtils from '../src/utils/inputs';
 import * as actionUtils from '@actions/cache/src/utils/actionUtils';
-import { setInputs } from '../src/utils/inputs';
-import { InputName, GitHubEvent, EnvVariable } from '../src/constants';
+import { setInputs, getInput } from '../src/utils/inputs';
+import { Inputs, InputName, GitHubEvent, EnvVariable } from '../src/constants';
 import caches, { npmHashFiles, npmExpectedHash } from './fixtures/caches';
 
 describe('cache runner', () => {
@@ -32,9 +33,12 @@ describe('cache runner', () => {
       caches.npm.restoreKeys.join('\n'),
     );
     expect(inputs?.[InputName.Key]).toStrictEqual(`npm-${npmExpectedHash}`);
+    expect(inputs?.[InputName.RestoreKeys]).toStrictEqual(
+      caches.npm.restoreKeys.join('\n'),
+    );
   });
 
-  it('should apply inputs', async () => {
+  it('should apply inputs and restore cache', async () => {
     setInputs({
       [InputName.Caches]: path.resolve(__dirname, 'fixtures/caches'),
       [EnvVariable.GitHubEventName]: GitHubEvent.PullRequest,
@@ -55,6 +59,15 @@ describe('cache runner', () => {
       [InputName.Path]: '',
       [InputName.RestoreKeys]: '',
     });
+
+    // inputs actually restored to original value
+    expect(getInput(InputName.Key)).toStrictEqual('');
+
+    // pretend still in execution context
+    setInputs(inputs as Inputs);
+
+    // `core.getState` should return the primary key
+    expect(core.getState('CACHE_KEY')).toStrictEqual(inputs?.[InputName.Key]);
 
     setInputsMock.mockRestore();
   });
