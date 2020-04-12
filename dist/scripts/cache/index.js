@@ -5153,10 +5153,11 @@ function run(action = undefined, cacheName = undefined) {
             core.setFailed(`Must provide a cache name.`);
             return process.exit(1);
         }
+        core.startGroup(`${action.toUpperCase()} cache for ${cacheName}...`);
         if (yield loadCustomCacheConfigs()) {
             const inputs = yield getCacheInputs(cacheName);
             if (inputs) {
-                core.info(`${action.toUpperCase()} cache for ${cacheName}...`);
+                core.info(JSON.stringify(inputs, null, 2));
                 yield exports.actions[action](inputs);
             }
             else {
@@ -5164,6 +5165,7 @@ function run(action = undefined, cacheName = undefined) {
                 process.exit(1);
             }
         }
+        core.endGroup();
     });
 }
 exports.run = run;

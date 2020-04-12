@@ -119,6 +119,7 @@ export async function run(
   if (await loadCustomCacheConfigs()) {
     const inputs = await getCacheInputs(cacheName);
     if (inputs) {
+      core.info(JSON.stringify(inputs, null, 2));
       await actions[action as ActionChoice](inputs);
     } else {
       core.setFailed(`Cache '${cacheName}' not defined, failed to ${action}.`);

@@ -92,6 +92,7 @@ You can override these by editing `.github/workflows/caches.js`. For example, if
 module.exports = {
   npm: {
     path: ['~/.npm'],
+    // It is recommended to always use absolute paths in these configs.
     hashFiles: [`${process.env.GITHUB_WORKSPACE}/yarn.lock`],
     keyPrefix: 'npm-',
     restoreKeys: 'npm-',
