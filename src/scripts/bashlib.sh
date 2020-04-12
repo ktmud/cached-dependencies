@@ -24,16 +24,20 @@ cache-save() {
 # install python packages
 pip-install() {
   cache-restore pip
-  pip install -r requirements*.txt
+  echo "::group::Install Python pacakges"
+  pip install -r requirements.txt
+  echo "::endgroup"
   cache-save pip
 }
 
 # install npm packages
 npm-install() {
+  cache-restore npm
+  echo "::group::Install npm pacakges"
   echo "npm: $(npm --version)"
   echo "node: $(node --version)"
-  cache-restore npm
   npm ci
+  echo "::endgroup::"
   cache-save npm
 }
 
