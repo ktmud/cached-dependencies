@@ -1,6 +1,6 @@
 # cached-dependencies
 
-[![](https://github.com/ktmud/setup-webapp/workflows/Tests/badge.svg)](https://github.com/ktmud/setup-webapp/actions?query=workflow%3ATests) [![codecov](https://codecov.io/gh/ktmud/setup-webapp/branch/master/graph/badge.svg)](https://codecov.io/gh/ktmud/setup-webapp)
+[![](https://github.com/ktmud/cached-dependencies/workflows/Tests/badge.svg)](https://github.com/ktmud/cached-dependencies/actions?query=workflow%3ATests) [![codecov](https://codecov.io/gh/ktmud/cached-dependencies/branch/master/graph/badge.svg)](https://codecov.io/gh/ktmud/cached-dependencies)
 
 Enable **multi-layer cache** and **command shorthands** in any workflows. Mostly useful for building webapps that require separate caches for frontend and backend dependencies.
 
