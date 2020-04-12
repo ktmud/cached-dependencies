@@ -5193,19 +5193,6 @@ const fs = __importStar(__webpack_require__(747));
 const os = __importStar(__webpack_require__(87));
 const { logWarning, isValidEvent } = utils;
 const { getState, saveState } = core;
-const stateStore = `${os.tmpdir()}/cached-dependencies-state.json`;
-const states = {};
-// try to load the cached state from a persistent file
-try {
-    Object.assign(states, JSON.parse(fs.readFileSync(stateStore, { encoding: 'utf-8' })));
-    core.info(`Load states from: ${stateStore}`);
-}
-catch (error) {
-    if (error.code !== 'ENOENT') {
-        logWarning(`Could not load states: ${stateStore}`);
-        logWarning(error.message);
-    }
-}
 /**
  * The default `core.saveState` only writes states as command output, and
  * `core.getState` is only possible to read the state in a later step via ENV
@@ -5214,17 +5201,50 @@ catch (error) {
  * So we use a temp file to save and load states, so to allow persistent
  * states within the same step.
  */
+const stateStore = `${os.tmpdir()}/cached-dependencies-state.json`;
+const states = {};
+/**
+ * Load states from the persistent store.
+ */
+function loadStates() {
+    try {
+        Object.assign(states, JSON.parse(fs.readFileSync(stateStore, { encoding: 'utf-8' })));
+        core.info(`Load states from: ${stateStore}`);
+    }
+    catch (error) {
+        // pass
+        if (error.code !== 'ENOENT') {
+            logWarning(`Could not load states: ${stateStore}`);
+            logWarning(error.message);
+        }
+    }
+}
+/**
+ * Save states to the persistent storage.
+ */
 function persistState(name, value) {
-    // make sure value is always string
-    states[name] = typeof value === 'string' ? value : JSON.stringify(value);
+    if (value === null || value === '') {
+        delete states[name];
+    }
+    else {
+        // make sure value is always string
+        states[name] = typeof value === 'string' ? value : JSON.stringify(value);
+    }
+    // always load before write, in case some other store action is running
+    // in parallel.
+    loadStates();
     // persist state in the temp file
     fs.writeFileSync(stateStore, JSON.stringify(states, null, 2), {
         encoding: 'utf-8',
     });
     saveState(name, value);
 }
+/**
+ * Get states from persistent store, fallback to "official" states.
+ */
 function obtainState(name) {
-    return getState(name) || states[name];
+    loadStates();
+    return states[name] || getState(name);
 }
 function beginImport() {
     Object.defineProperty(utils, 'isValidEvent', { value: () => false });
