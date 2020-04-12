@@ -5,7 +5,8 @@ import * as core from '@actions/core';
 import { exec } from '@actions/exec';
 import path from 'path';
 import fs from 'fs';
-import { DefaultInputs } from './constants';
+import { DefaultInputs, InputName } from './constants';
+import { getInput } from './utils/inputs';
 
 const SHARED_BASHLIB = path.resolve(__dirname, '../src/scripts/bashlib.sh');
 
@@ -30,13 +31,12 @@ export async function runCommand(
 }
 
 export async function run(): Promise<void> {
-  let bashlib = core.getInput('bashlib') || DefaultInputs.Bashlib;
-  const rawCommands = (core.getInput('run') || DefaultInputs.Run).trim();
-  const runInParallel =
-    (core.getInput('parallel') || '').toUpperCase() === 'TRUE';
+  let bashlib = getInput(InputName.Bashlib);
+  const rawCommands = getInput(InputName.Run);
+  const runInParallel = getInput(InputName.Parallel);
 
   if (!fs.existsSync(bashlib)) {
-    if (bashlib !== DefaultInputs.Bashlib) {
+    if (bashlib !== DefaultInputs[InputName.Bashlib]) {
       core.error(`Custom bashlib "${bashlib}" does not exist.`);
     }
     // don't add bashlib to runCommand

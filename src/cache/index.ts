@@ -13,7 +13,7 @@ import * as fs from 'fs';
 import * as core from '@actions/core';
 import * as glob from '@actions/glob';
 import { Inputs, InputName, DefaultInputs } from '../constants';
-import { applyInputs } from '../utils/inputs';
+import { applyInputs, getInput } from '../utils/inputs';
 import caches from './caches'; // default cache configs
 
 // GitHub uses `sha256` for the built-in `${{ hashFiles(...) }}` expression
@@ -26,14 +26,14 @@ const HASH_OPTION = { algorithm: 'sha256' };
  * @returns Whether the loading is successfull.
  */
 export async function loadCustomCacheConfigs() {
-  const customCachePath = core.getInput('caches') || DefaultInputs.Caches;
+  const customCachePath = getInput(InputName.Caches);
   try {
     core.debug(`Reading cache configs from '${customCachePath}'`);
     const customCache = await import(customCachePath);
     Object.assign(caches, customCache.default);
   } catch (error) {
     if (
-      customCachePath !== DefaultInputs.Caches ||
+      customCachePath !== DefaultInputs[InputName.Caches] ||
       !error.message.includes('Cannot find module')
     ) {
       core.error(error.message);
@@ -115,7 +115,11 @@ export async function run(
     return process.exit(1);
   }
 
-  core.startGroup(`${action.toUpperCase()} cache for ${cacheName}...`);
+  const runInParallel = getInput(InputName.Parallel);
+
+  if (!runInParallel) {
+    core.startGroup(`${action.toUpperCase()} cache for ${cacheName}`);
+  }
   if (await loadCustomCacheConfigs()) {
     const inputs = await getCacheInputs(cacheName);
     if (inputs) {
@@ -126,5 +130,7 @@ export async function run(
       process.exit(1);
     }
   }
-  core.endGroup();
+  if (!runInParallel) {
+    core.endGroup();
+  }
 }

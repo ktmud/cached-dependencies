@@ -2,7 +2,20 @@
  * Manage inputs and env variables.
  */
 import * as core from '@actions/core';
-import { Inputs, EnvVariableNames } from '../constants';
+import {
+  Inputs,
+  EnvVariableNames,
+  InputName,
+  DefaultInputs,
+} from '../constants';
+
+export function getInput(name: keyof Inputs): string {
+  const value = core.getInput(name);
+  if (name === InputName.Parallel) {
+    return value.toUpperCase() === 'TRUE' ? value : '';
+  }
+  return value || DefaultInputs[name] || '';
+}
 
 /**
  * Update env variables associated with some inputs.

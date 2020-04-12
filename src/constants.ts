@@ -36,8 +36,8 @@ export interface Inputs {
   [InputName.Parallel]?: string;
 }
 
-export enum DefaultInputs {
-  Caches = '.github/workflows/caches.js',
-  Bashlib = '.github/workflows/bashlib.sh',
-  Run = 'default-setup-command',
-}
+export const DefaultInputs = {
+  [InputName.Caches]: '.github/workflows/caches.js',
+  [InputName.Bashlib]: '.github/workflows/bashlib.sh',
+  [InputName.Run]: 'default-setup-command',
+} as Inputs;

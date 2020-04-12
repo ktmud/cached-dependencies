@@ -991,12 +991,11 @@ var EnvVariable;
     EnvVariable["GitHubEventName"] = "GITHUB_EVENT_NAME";
 })(EnvVariable = exports.EnvVariable || (exports.EnvVariable = {}));
 exports.EnvVariableNames = new Set(Object.values(EnvVariable));
-var DefaultInputs;
-(function (DefaultInputs) {
-    DefaultInputs["Caches"] = ".github/workflows/caches.js";
-    DefaultInputs["Bashlib"] = ".github/workflows/bashlib.sh";
-    DefaultInputs["Run"] = "default-setup-command";
-})(DefaultInputs = exports.DefaultInputs || (exports.DefaultInputs = {}));
+exports.DefaultInputs = {
+    [InputName.Caches]: '.github/workflows/caches.js',
+    [InputName.Bashlib]: '.github/workflows/bashlib.sh',
+    [InputName.Run]: 'default-setup-command',
+};
 
 
 /***/ }),
@@ -1342,6 +1341,7 @@ const exec_1 = __webpack_require__(986);
 const path_1 = __importDefault(__webpack_require__(622));
 const fs_1 = __importDefault(__webpack_require__(747));
 const constants_1 = __webpack_require__(211);
+const inputs_1 = __webpack_require__(935);
 const SHARED_BASHLIB = path_1.default.resolve(__dirname, '../src/scripts/bashlib.sh');
 /**
  * Run bash commands with predefined lib functions.
@@ -1365,11 +1365,11 @@ function runCommand(cmd, extraBashlib) {
 exports.runCommand = runCommand;
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
-        let bashlib = core.getInput('bashlib') || constants_1.DefaultInputs.Bashlib;
-        const rawCommands = (core.getInput('run') || constants_1.DefaultInputs.Run).trim();
-        const runInParallel = (core.getInput('parallel') || '').toUpperCase() === 'TRUE';
+        let bashlib = inputs_1.getInput(constants_1.InputName.Bashlib);
+        const rawCommands = inputs_1.getInput(constants_1.InputName.Run);
+        const runInParallel = inputs_1.getInput(constants_1.InputName.Parallel);
         if (!fs_1.default.existsSync(bashlib)) {
-            if (bashlib !== constants_1.DefaultInputs.Bashlib) {
+            if (bashlib !== constants_1.DefaultInputs[constants_1.InputName.Bashlib]) {
                 core.error(`Custom bashlib "${bashlib}" does not exist.`);
             }
             // don't add bashlib to runCommand
@@ -1627,6 +1627,81 @@ function isUnixExecutable(stats) {
 /***/ (function(module) {
 
 module.exports = require("fs");
+
+/***/ }),
+
+/***/ 935:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
+    result["default"] = mod;
+    return result;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+/**
+ * Manage inputs and env variables.
+ */
+const core = __importStar(__webpack_require__(470));
+const constants_1 = __webpack_require__(211);
+function getInput(name) {
+    const value = core.getInput(name);
+    if (name === constants_1.InputName.Parallel) {
+        return value.toUpperCase() === 'TRUE' ? value : '';
+    }
+    return value || constants_1.DefaultInputs[name] || '';
+}
+exports.getInput = getInput;
+/**
+ * Update env variables associated with some inputs.
+ * See: https://github.com/actions/toolkit/blob/5b940ebda7e7b86545fe9741903c930bc1191eb0/packages/core/src/core.ts#L69-L77 .
+ *
+ * @param {Inputs} inputs - The new inputs to apply to the env variables.
+ */
+function setInputs(inputs) {
+    for (const [name, value] of Object.entries(inputs)) {
+        const envName = constants_1.EnvVariableNames.has(name)
+            ? name
+            : `INPUT_${name.replace(/ /g, '_').toUpperCase()}`;
+        process.env[envName] = value;
+    }
+}
+exports.setInputs = setInputs;
+/**
+ * Apply new inputs and execute a runner function, restore them when done.
+ *
+ * @param {Inputs} inputs - The new inputs to apply to the env variables before
+ *                          excuting the runner.
+ * @param {runner} runner - The runner function that returns a promise.
+ * @returns {Promise<any>} - The result from the runner function.
+ */
+function applyInputs(inputs, runner) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const originalInputs = Object.fromEntries(Object.keys(inputs).map(name => [
+            name,
+            constants_1.EnvVariableNames.has(name) ? process.env[name] : core.getInput(name),
+        ]));
+        exports.setInputs(inputs);
+        const result = yield runner();
+        exports.setInputs(originalInputs);
+        return result;
+    });
+}
+exports.applyInputs = applyInputs;
+
 
 /***/ }),
 

@@ -2638,12 +2638,11 @@ var EnvVariable;
     EnvVariable["GitHubEventName"] = "GITHUB_EVENT_NAME";
 })(EnvVariable = exports.EnvVariable || (exports.EnvVariable = {}));
 exports.EnvVariableNames = new Set(Object.values(EnvVariable));
-var DefaultInputs;
-(function (DefaultInputs) {
-    DefaultInputs["Caches"] = ".github/workflows/caches.js";
-    DefaultInputs["Bashlib"] = ".github/workflows/bashlib.sh";
-    DefaultInputs["Run"] = "default-setup-command";
-})(DefaultInputs = exports.DefaultInputs || (exports.DefaultInputs = {}));
+exports.DefaultInputs = {
+    [InputName.Caches]: '.github/workflows/caches.js',
+    [InputName.Bashlib]: '.github/workflows/bashlib.sh',
+    [InputName.Run]: 'default-setup-command',
+};
 
 
 /***/ }),
@@ -5062,14 +5061,14 @@ const HASH_OPTION = { algorithm: 'sha256' };
  */
 function loadCustomCacheConfigs() {
     return __awaiter(this, void 0, void 0, function* () {
-        const customCachePath = core.getInput('caches') || constants_1.DefaultInputs.Caches;
+        const customCachePath = inputs_1.getInput(constants_1.InputName.Caches);
         try {
             core.debug(`Reading cache configs from '${customCachePath}'`);
             const customCache = yield Promise.resolve().then(() => __importStar(require(customCachePath)));
             Object.assign(caches_1.default, customCache.default);
         }
         catch (error) {
-            if (customCachePath !== constants_1.DefaultInputs.Caches ||
+            if (customCachePath !== constants_1.DefaultInputs[constants_1.InputName.Caches] ||
                 !error.message.includes('Cannot find module')) {
                 core.error(error.message);
                 core.setFailed(`Failed to load custom cache configs: '${customCachePath}'`);
@@ -5153,7 +5152,10 @@ function run(action = undefined, cacheName = undefined) {
             core.setFailed(`Must provide a cache name.`);
             return process.exit(1);
         }
-        core.startGroup(`${action.toUpperCase()} cache for ${cacheName}...`);
+        const runInParallel = inputs_1.getInput(constants_1.InputName.Parallel);
+        if (!runInParallel) {
+            core.startGroup(`${action.toUpperCase()} cache for ${cacheName}`);
+        }
         if (yield loadCustomCacheConfigs()) {
             const inputs = yield getCacheInputs(cacheName);
             if (inputs) {
@@ -5165,7 +5167,9 @@ function run(action = undefined, cacheName = undefined) {
                 process.exit(1);
             }
         }
-        core.endGroup();
+        if (!runInParallel) {
+            core.endGroup();
+        }
     });
 }
 exports.run = run;
@@ -5728,6 +5732,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
  */
 const core = __importStar(__webpack_require__(470));
 const constants_1 = __webpack_require__(211);
+function getInput(name) {
+    const value = core.getInput(name);
+    if (name === constants_1.InputName.Parallel) {
+        return value.toUpperCase() === 'TRUE' ? value : '';
+    }
+    return value || constants_1.DefaultInputs[name] || '';
+}
+exports.getInput = getInput;
 /**
  * Update env variables associated with some inputs.
  * See: https://github.com/actions/toolkit/blob/5b940ebda7e7b86545fe9741903c930bc1191eb0/packages/core/src/core.ts#L69-L77 .

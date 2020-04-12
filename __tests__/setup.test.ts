@@ -19,7 +19,7 @@ describe('setup runner', () => {
     await setup.run();
     expect(runCommandMock).toHaveBeenCalledTimes(1);
     expect(runCommandMock).toHaveBeenCalledWith(
-      DefaultInputs.Run,
+      DefaultInputs[InputName.Run],
       extraBashlib,
     );
   });
@@ -29,11 +29,11 @@ describe('setup runner', () => {
       [InputName.Bashlib]: '',
       [InputName.Parallel]: 'false',
       [InputName.Run]: `
-        ${DefaultInputs.Run}() {
+        ${DefaultInputs[InputName.Run]}() {
           echo "It works!"
           exit 202
         }
-        ${DefaultInputs.Run}
+        ${DefaultInputs[InputName.Run]}
       `,
     });
     // allow the bash script to run for one test, but override the default

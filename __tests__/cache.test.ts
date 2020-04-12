@@ -13,7 +13,7 @@ describe('cache runner', () => {
   });
 
   it('should use default cache config', async () => {
-    // when caches is empty, will read from `DefaultInputs.Caches`
+    // when caches is empty, will read from `DefaultInputs['caches']`
     await cache.loadCustomCacheConfigs();
     // but `npm` actually come from `src/cache/caches.ts`
     const inputs = await cache.getCacheInputs('npm');
