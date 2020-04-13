@@ -3,21 +3,19 @@ import * as core from '@actions/core';
 import * as cache from '../src/cache';
 import * as inputsUtils from '../src/utils/inputs';
 import * as actionUtils from '@actions/cache/src/utils/actionUtils';
+import defaultCaches from '../src/cache/caches';
 import { setInputs, getInput } from '../src/utils/inputs';
 import { Inputs, InputName, GitHubEvent, EnvVariable } from '../src/constants';
-import caches, { npmHashFiles, npmExpectedHash } from './fixtures/caches';
+import caches, { npmExpectedHash } from './fixtures/caches';
 
 describe('cache runner', () => {
-  it('hash files', async () => {
-    const hash = await cache.hashFiles(npmHashFiles);
-    expect(hash).toStrictEqual(npmExpectedHash);
-  });
-
   it('should use default cache config', async () => {
-    // when caches is empty, will read from `DefaultInputs['caches']`
     await cache.loadCustomCacheConfigs();
     // but `npm` actually come from `src/cache/caches.ts`
     const inputs = await cache.getCacheInputs('npm');
+    expect(inputs?.[InputName.Path]).toStrictEqual(
+      defaultCaches.npm.path.join('\n'),
+    );
     expect(inputs?.[InputName.RestoreKeys]).toStrictEqual('npm-');
   });
 
@@ -25,13 +23,10 @@ describe('cache runner', () => {
     setInputs({
       [InputName.Caches]: path.resolve(__dirname, 'fixtures/caches'),
     });
-
     await cache.loadCustomCacheConfigs();
 
     const inputs = await cache.getCacheInputs('npm');
-    expect(inputs?.[InputName.RestoreKeys]).toStrictEqual(
-      caches.npm.restoreKeys.join('\n'),
-    );
+    expect(inputs?.[InputName.Path]).toStrictEqual(caches.npm.path.join('\n'));
     expect(inputs?.[InputName.Key]).toStrictEqual(`npm-${npmExpectedHash}`);
     expect(inputs?.[InputName.RestoreKeys]).toStrictEqual(
       caches.npm.restoreKeys.join('\n'),

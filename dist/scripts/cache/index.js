@@ -4037,7 +4037,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * Default cache configs
  */
 const os = __importStar(__webpack_require__(87));
-const { HOME = '', GITHUB_WORKSPACE = '' } = process.env;
+const { HOME = '~' } = process.env;
 const platform = os.platform();
 const pathByPlatform = {
     linux: {
@@ -5116,8 +5116,10 @@ exports.loadCustomCacheConfigs = loadCustomCacheConfigs;
  * Generate SHA256 hash for a list of files matched by glob patterns.
  *
  * @param {string[]} patterns - The glob pattern.
+ * @param {string} extra - The extra string to append to the file hashes to
+ *                         comptue the final hash.
  */
-function hashFiles(patterns) {
+function hashFiles(patterns, extra = '') {
     var e_1, _a;
     return __awaiter(this, void 0, void 0, function* () {
         const globber = yield glob.create(patterns.join('\n'));
@@ -5140,7 +5142,7 @@ function hashFiles(patterns) {
             finally { if (e_1) throw e_1.error; }
         }
         core.debug(`Computed hash for ${counter} files. Pattern: ${patterns}`);
-        return hasha_1.default(hash, HASH_OPTION);
+        return hasha_1.default(hash + extra, HASH_OPTION);
     });
 }
 exports.hashFiles = hashFiles;
@@ -5156,11 +5158,14 @@ function getCacheInputs(cacheName) {
             return null;
         }
         const { keyPrefix, restoreKeys, path, hashFiles: patterns } = caches_1.default[cacheName];
+        const pathString = path.join('\n');
         const prefix = keyPrefix || `${cacheName}-`;
-        const hash = yield hashFiles(patterns);
+        // include `path` to hash, too, so to burse caches in case users change
+        // the path definition.
+        const hash = yield hashFiles(patterns, pathString);
         return {
             [constants_1.InputName.Key]: `${prefix}${hash}`,
-            [constants_1.InputName.Path]: path.join('\n'),
+            [constants_1.InputName.Path]: pathString,
             // only use prefix as restore key if it is never defined
             [constants_1.InputName.RestoreKeys]: restoreKeys === undefined ? prefix : restoreKeys.join('\n'),
         };

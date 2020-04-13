@@ -50,8 +50,10 @@ export async function loadCustomCacheConfigs() {
  * Generate SHA256 hash for a list of files matched by glob patterns.
  *
  * @param {string[]} patterns - The glob pattern.
+ * @param {string} extra - The extra string to append to the file hashes to
+ *                         comptue the final hash.
  */
-export async function hashFiles(patterns: string[]) {
+export async function hashFiles(patterns: string[], extra: string = '') {
   const globber = await glob.create(patterns.join('\n'));
   let hash = '';
   let counter = 0;
@@ -62,7 +64,7 @@ export async function hashFiles(patterns: string[]) {
     }
   }
   core.debug(`Computed hash for ${counter} files. Pattern: ${patterns}`);
-  return hasha(hash, HASH_OPTION);
+  return hasha(hash + extra, HASH_OPTION);
 }
 
 /**
@@ -80,11 +82,14 @@ export async function getCacheInputs(
   const { keyPrefix, restoreKeys, path, hashFiles: patterns } = caches[
     cacheName
   ];
+  const pathString = path.join('\n');
   const prefix = keyPrefix || `${cacheName}-`;
-  const hash = await hashFiles(patterns);
+  // include `path` to hash, too, so to burse caches in case users change
+  // the path definition.
+  const hash = await hashFiles(patterns, pathString);
   return {
     [InputName.Key]: `${prefix}${hash}`,
-    [InputName.Path]: path.join('\n'),
+    [InputName.Path]: pathString,
     // only use prefix as restore key if it is never defined
     [InputName.RestoreKeys]:
       restoreKeys === undefined ? prefix : restoreKeys.join('\n'),

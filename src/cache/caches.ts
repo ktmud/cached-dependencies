@@ -14,7 +14,7 @@ export interface CacheConfigs {
   [cacheName: string]: CacheConfig;
 }
 
-const { HOME = '', GITHUB_WORKSPACE = '' } = process.env;
+const { HOME = '~' } = process.env;
 const platform = os.platform() as 'linux' | 'darwin' | 'win32';
 const pathByPlatform = {
   linux: {
