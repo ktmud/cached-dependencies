@@ -58,15 +58,19 @@ function loadStates() {
 function persistState(name: string, value: any) {
   const states = loadStates();
   const stateStore = getStateStoreFile();
+  const valueString = typeof value === 'string' ? value : JSON.stringify(value);
 
   // make sure value is always string
-  states[name] = typeof value === 'string' ? value : JSON.stringify(value);
+  states[name] = valueString;
 
   // persist state in the temp file
   fs.writeFileSync(stateStore, JSON.stringify(states, null, 2), {
     encoding: 'utf-8',
   });
-  saveState(name, value);
+  core.debug(`Persist state "${name}=${valueString}" to ${stateStore}`);
+
+  // still pass the original value to the original function, though
+  return saveState(name, value);
 }
 
 /**
