@@ -13,7 +13,7 @@ import * as fs from 'fs';
 import * as core from '@actions/core';
 import * as glob from '@actions/glob';
 import { Inputs, InputName, DefaultInputs } from '../constants';
-import { applyInputs, getInput } from '../utils/inputs';
+import { applyInputs, getInput, maybeArrayToString } from '../utils/inputs';
 import caches from './caches'; // default cache configs
 
 // GitHub uses `sha256` for the built-in `${{ hashFiles(...) }}` expression
@@ -53,8 +53,11 @@ export async function loadCustomCacheConfigs() {
  * @param {string} extra - The extra string to append to the file hashes to
  *                         comptue the final hash.
  */
-export async function hashFiles(patterns: string[], extra: string = '') {
-  const globber = await glob.create(patterns.join('\n'));
+export async function hashFiles(
+  patterns: string[] | string,
+  extra: string = '',
+) {
+  const globber = await glob.create(maybeArrayToString(patterns));
   let hash = '';
   let counter = 0;
   for await (const file of globber.globGenerator()) {
@@ -82,7 +85,7 @@ export async function getCacheInputs(
   const { keyPrefix, restoreKeys, path, hashFiles: patterns } = caches[
     cacheName
   ];
-  const pathString = path.join('\n');
+  const pathString = maybeArrayToString(path);
   const prefix = keyPrefix || `${cacheName}-`;
   // include `path` to hash, too, so to burse caches in case users change
   // the path definition.
@@ -92,7 +95,7 @@ export async function getCacheInputs(
     [InputName.Path]: pathString,
     // only use prefix as restore key if it is never defined
     [InputName.RestoreKeys]:
-      restoreKeys === undefined ? prefix : restoreKeys.join('\n'),
+      restoreKeys === undefined ? prefix : maybeArrayToString(restoreKeys),
   };
 }
 

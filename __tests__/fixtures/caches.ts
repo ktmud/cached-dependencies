@@ -9,6 +9,6 @@ export default {
   npm: {
     path: [`~/.npm`],
     hashFiles: npmHashFiles,
-    restoreKeys: ['npm-', 'node-npm-'],
+    restoreKeys: 'node-npm-',
   },
 };

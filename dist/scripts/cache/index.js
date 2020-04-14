@@ -4041,22 +4041,22 @@ const { HOME = '~' } = process.env;
 const platform = os.platform();
 const pathByPlatform = {
     linux: {
-        pip: [`${HOME}/.cache/pip`],
+        pip: `${HOME}/.cache/pip`,
     },
     darwin: {
-        pip: [`${HOME}/Library/Caches/pip`],
+        pip: `${HOME}/Library/Caches/pip`,
     },
     win32: {
-        pip: [`${HOME}\\AppData\\Local\\pip\\Cache`],
+        pip: `${HOME}\\AppData\\Local\\pip\\Cache`,
     },
 };
 exports.default = {
     pip: {
         path: pathByPlatform[platform].pip,
-        hashFiles: ['requirements*.txt'],
+        hashFiles: 'requirements*.txt',
     },
     npm: {
-        path: [`${HOME}/.npm`],
+        path: `${HOME}/.npm`,
         hashFiles: [
             `package-lock.json`,
             // support lerna monorepo with depth=2
@@ -4065,7 +4065,7 @@ exports.default = {
         ],
     },
     yarn: {
-        path: [`${HOME}/.npm`],
+        path: `${HOME}/.npm`,
         hashFiles: [`yarn.lock`, `*/*/yarn.lock`, `!node_modules/*/yarn.lock`],
     },
 };
@@ -5122,7 +5122,7 @@ exports.loadCustomCacheConfigs = loadCustomCacheConfigs;
 function hashFiles(patterns, extra = '') {
     var e_1, _a;
     return __awaiter(this, void 0, void 0, function* () {
-        const globber = yield glob.create(patterns.join('\n'));
+        const globber = yield glob.create(inputs_1.maybeArrayToString(patterns));
         let hash = '';
         let counter = 0;
         try {
@@ -5158,7 +5158,7 @@ function getCacheInputs(cacheName) {
             return null;
         }
         const { keyPrefix, restoreKeys, path, hashFiles: patterns } = caches_1.default[cacheName];
-        const pathString = path.join('\n');
+        const pathString = inputs_1.maybeArrayToString(path);
         const prefix = keyPrefix || `${cacheName}-`;
         // include `path` to hash, too, so to burse caches in case users change
         // the path definition.
@@ -5167,7 +5167,7 @@ function getCacheInputs(cacheName) {
             [constants_1.InputName.Key]: `${prefix}${hash}`,
             [constants_1.InputName.Path]: pathString,
             // only use prefix as restore key if it is never defined
-            [constants_1.InputName.RestoreKeys]: restoreKeys === undefined ? prefix : restoreKeys.join('\n'),
+            [constants_1.InputName.RestoreKeys]: restoreKeys === undefined ? prefix : inputs_1.maybeArrayToString(restoreKeys),
         };
     });
 }
@@ -5269,8 +5269,8 @@ function loadStates() {
     catch (error) {
         // pass
         if (error.code !== 'ENOENT') {
-            logWarning(`Could not load states: ${stateStore}`);
-            logWarning(error.message);
+            utils.logWarning(`Could not load states: ${stateStore}`);
+            utils.logWarning(error.message);
         }
     }
     return states;
@@ -5820,6 +5820,10 @@ function applyInputs(inputs, runner) {
     });
 }
 exports.applyInputs = applyInputs;
+function maybeArrayToString(input) {
+    return Array.isArray(input) ? input.join('\n') : input;
+}
+exports.maybeArrayToString = maybeArrayToString;
 
 
 /***/ }),

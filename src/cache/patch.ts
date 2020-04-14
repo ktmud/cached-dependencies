@@ -45,8 +45,8 @@ function loadStates() {
   } catch (error) {
     // pass
     if (error.code !== 'ENOENT') {
-      logWarning(`Could not load states: ${stateStore}`)
-      logWarning(error.message);
+      utils.logWarning(`Could not load states: ${stateStore}`)
+      utils.logWarning(error.message);
     }
   }
   return states;

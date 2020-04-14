@@ -55,3 +55,7 @@ export async function applyInputs(
   exports.setInputs(originalInputs);
   return result;
 }
+
+export function maybeArrayToString(input: string[] | string) {
+  return Array.isArray(input) ? input.join('\n') : input;
+}

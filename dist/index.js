@@ -1701,6 +1701,10 @@ function applyInputs(inputs, runner) {
     });
 }
 exports.applyInputs = applyInputs;
+function maybeArrayToString(input) {
+    return Array.isArray(input) ? input.join('\n') : input;
+}
+exports.maybeArrayToString = maybeArrayToString;
 
 
 /***/ }),

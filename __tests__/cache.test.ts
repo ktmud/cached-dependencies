@@ -1,12 +1,29 @@
 import path from 'path';
+import * as fs from 'fs';
+import * as os from 'os';
 import * as core from '@actions/core';
 import * as cache from '../src/cache';
 import * as inputsUtils from '../src/utils/inputs';
 import * as actionUtils from '@actions/cache/src/utils/actionUtils';
 import defaultCaches from '../src/cache/caches';
-import { setInputs, getInput } from '../src/utils/inputs';
+import { setInputs, getInput, maybeArrayToString } from '../src/utils/inputs';
 import { Inputs, InputName, GitHubEvent, EnvVariable } from '../src/constants';
 import caches, { npmExpectedHash } from './fixtures/caches';
+
+describe('patch core states', () => {
+  it('should log error if states file invalid', () => {
+    const logWarningMock = jest.spyOn(actionUtils, 'logWarning');
+    fs.writeFileSync(`${os.tmpdir()}/cached--states.json`, 'INVALID_JSON', {
+      encoding: 'utf-8',
+    });
+    core.getState('haha');
+    expect(logWarningMock).toHaveBeenCalledTimes(2);
+  });
+  it('should persist state', () => {
+    core.saveState('test', '100');
+    expect(core.getState('test')).toStrictEqual('100');
+  });
+});
 
 describe('cache runner', () => {
   it('should use default cache config', async () => {
@@ -14,7 +31,7 @@ describe('cache runner', () => {
     // but `npm` actually come from `src/cache/caches.ts`
     const inputs = await cache.getCacheInputs('npm');
     expect(inputs?.[InputName.Path]).toStrictEqual(
-      defaultCaches.npm.path.join('\n'),
+      maybeArrayToString(defaultCaches.npm.path),
     );
     expect(inputs?.[InputName.RestoreKeys]).toStrictEqual('npm-');
   });
@@ -26,10 +43,12 @@ describe('cache runner', () => {
     await cache.loadCustomCacheConfigs();
 
     const inputs = await cache.getCacheInputs('npm');
-    expect(inputs?.[InputName.Path]).toStrictEqual(caches.npm.path.join('\n'));
+    expect(inputs?.[InputName.Path]).toStrictEqual(
+      maybeArrayToString(caches.npm.path),
+    );
     expect(inputs?.[InputName.Key]).toStrictEqual(`npm-${npmExpectedHash}`);
     expect(inputs?.[InputName.RestoreKeys]).toStrictEqual(
-      caches.npm.restoreKeys.join('\n'),
+      maybeArrayToString(caches.npm.restoreKeys),
     );
   });
 

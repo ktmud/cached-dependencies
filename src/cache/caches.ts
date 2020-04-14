@@ -4,10 +4,10 @@
 import * as os from 'os';
 
 export interface CacheConfig {
-  path: string[];
-  hashFiles: string[];
+  path: string[] | string;
+  hashFiles: string[] | string;
   keyPrefix?: string;
-  restoreKeys?: string[];
+  restoreKeys?: string[] | string;
 }
 
 export interface CacheConfigs {
@@ -18,23 +18,23 @@ const { HOME = '~' } = process.env;
 const platform = os.platform() as 'linux' | 'darwin' | 'win32';
 const pathByPlatform = {
   linux: {
-    pip: [`${HOME}/.cache/pip`],
+    pip: `${HOME}/.cache/pip`,
   },
   darwin: {
-    pip: [`${HOME}/Library/Caches/pip`],
+    pip: `${HOME}/Library/Caches/pip`,
   },
   win32: {
-    pip: [`${HOME}\\AppData\\Local\\pip\\Cache`],
+    pip: `${HOME}\\AppData\\Local\\pip\\Cache`,
   },
 };
 
 export default {
   pip: {
     path: pathByPlatform[platform].pip,
-    hashFiles: ['requirements*.txt'],
+    hashFiles: 'requirements*.txt',
   },
   npm: {
-    path: [`${HOME}/.npm`],
+    path: `${HOME}/.npm`,
     hashFiles: [
       `package-lock.json`,
       // support lerna monorepo with depth=2
@@ -43,7 +43,7 @@ export default {
     ],
   },
   yarn: {
-    path: [`${HOME}/.npm`],
+    path: `${HOME}/.npm`,
     hashFiles: [`yarn.lock`, `*/*/yarn.lock`, `!node_modules/*/yarn.lock`],
   },
 } as CacheConfigs;
