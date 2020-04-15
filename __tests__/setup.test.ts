@@ -25,6 +25,11 @@ describe('setup runner', () => {
   });
 
   it('should allow inline bash overrides', async () => {
+    const processExitMock = jest
+      .spyOn(process, 'exit')
+      // @ts-ignore
+      .mockImplementation(() => {});
+
     setInputs({
       [InputName.Bashlib]: '',
       [InputName.Parallel]: 'false',
@@ -39,6 +44,8 @@ describe('setup runner', () => {
     // allow the bash script to run for one test, but override the default
     await setup.run();
     expect(runCommandMock).toHaveBeenCalledTimes(1);
+    expect(processExitMock).toHaveBeenCalledTimes(1);
+    expect(processExitMock).toHaveBeenCalledWith(1);
   });
 
   it('should use run commands', async () => {

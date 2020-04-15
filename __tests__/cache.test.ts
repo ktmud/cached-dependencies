@@ -100,8 +100,8 @@ describe('cache runner', () => {
   });
 
   it('should exit on invalid args', async () => {
-    // other calls do not generate errors
-    const mockExit = jest
+    // other calls do generate errors
+    const processExitMock = jest
       .spyOn(process, 'exit')
       // @ts-ignore
       .mockImplementation(() => {});
@@ -119,6 +119,6 @@ describe('cache runner', () => {
     });
     await cache.run('save', 'npm');
 
-    expect(mockExit).toHaveBeenCalledTimes(5);
+    expect(processExitMock).toHaveBeenCalledTimes(5);
   });
 });

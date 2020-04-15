@@ -1,5 +1,5 @@
 module.exports = {
-  plugins: ['jest', '@typescript-eslint', 'packagejson'],
+  plugins: ['jest', '@typescript-eslint'],
   extends: ['plugin:jest/all'],
   parser: '@typescript-eslint/parser',
   parserOptions: {

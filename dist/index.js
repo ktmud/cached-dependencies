@@ -1359,6 +1359,7 @@ function runCommand(cmd, extraBashlib) {
         }
         catch (error) {
             core.setFailed(error.message);
+            process.exit(1);
         }
     });
 }

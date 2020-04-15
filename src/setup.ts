@@ -27,6 +27,7 @@ export async function runCommand(
     await exec('bash', ['-c', [...bashlibCommands, cmd].join('\n     ')]);
   } catch (error) {
     core.setFailed(error.message);
+    process.exit(1);
   }
 }
 
