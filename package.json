@@ -36,7 +36,7 @@
     "@typescript-eslint/parser": "2.28.0",
     "@zeit/ncc": "0.22.1",
     "eslint": "7.0.0",
-    "eslint-plugin-jest": "23.8.2",
+    "eslint-plugin-jest": "23.17.1",
     "jest": "25.3.0",
     "js-yaml": "3.13.1",
     "prettier": "2.0.4",
