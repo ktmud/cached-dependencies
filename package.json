@@ -24,10 +24,10 @@
     "@actions/core": "1.2.4",
     "@actions/exec": "1.0.4",
     "@actions/glob": "0.1.0",
-    "@types/uuid": "7.0.4",
+    "@types/uuid": "8.3.0",
     "hasha": "5.2.0",
     "tempy": "0.6.0",
-    "uuid": "7.0.3"
+    "uuid": "8.3.0"
   },
   "devDependencies": {
     "@types/jest": "26.0.7",
