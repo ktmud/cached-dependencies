@@ -11,7 +11,7 @@
   "main": "dist/run",
   "scripts": {
     "all": "npm run format && npm run lint && npm run test && npm run build",
-    "build": "npm run clean && tsc && ncc build -o dist src/run.ts && ncc build -o dist/scripts/cache src/scripts/cache.ts",
+    "build": "npm run clean && tsc && ncc build --target es2019 -o dist src/run.ts && ncc build --target es2019 -o dist/scripts/cache src/scripts/cache.ts",
     "clean": "rm -rf ./lib ./dist",
     "coverage": "npm run test && open ./coverage/lcov-report/index.html",
     "format": "prettier --write **/*.ts",
@@ -34,7 +34,7 @@
     "@types/node": "12.12.53",
     "@typescript-eslint/eslint-plugin": "3.7.1",
     "@typescript-eslint/parser": "3.7.1",
-    "@zeit/ncc": "0.22.3",
+    "@vercel/ncc": "^0.25.1",
     "eslint": "7.5.0",
     "eslint-plugin-jest": "23.19.0",
     "jest": "26.1.0",
