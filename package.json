@@ -30,7 +30,7 @@
     "uuid": "7.0.3"
   },
   "devDependencies": {
-    "@types/jest": "26.0.7",
+    "@types/jest": "26.0.20",
     "@types/node": "12.12.53",
     "@typescript-eslint/eslint-plugin": "3.10.1",
     "@typescript-eslint/parser": "3.10.1",
