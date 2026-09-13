@@ -8,6 +8,14 @@ updates:
       dependencies:
         patterns:
           - '*'
+    ignore:
+      # keep node types in sync with the `node24` runtime in action.yml
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
+      # TypeScript 7 (native port) is not supported by typescript-eslint and
+      # ncc yet
+      - dependency-name: typescript
+        update-types: ['version-update:semver-major']
   - package-ecosystem: github-actions
     directory: /
     schedule:

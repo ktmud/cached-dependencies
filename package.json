@@ -1,6 +1,6 @@
 {
   "name": "cached-dependencies",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
   "keywords": [
     "actions",
@@ -33,7 +33,7 @@
     "@vercel/ncc": "0.45.0",
     "@vitest/coverage-v8": "5.0.0",
     "@vitest/eslint-plugin": "1.6.27",
-    "eslint": "10.0.1",
+    "eslint": "10.10.0",
     "prettier": "3.9.6",
     "prettier-plugin-packagejson": "3.0.2",
     "typescript": "5.9.3",
