@@ -29,14 +29,14 @@
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
-    "@types/node": "24.13.4",
+    "@types/node": "26.5.1",
     "@vercel/ncc": "0.45.0",
     "@vitest/coverage-v8": "5.0.0",
     "@vitest/eslint-plugin": "1.6.27",
-    "eslint": "10.0.1",
+    "eslint": "10.10.0",
     "prettier": "3.9.6",
     "prettier-plugin-packagejson": "3.0.2",
-    "typescript": "5.9.3",
+    "typescript": "7.0.2",
     "typescript-eslint": "8.70.0",
     "vitest": "5.0.0"
   },
