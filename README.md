@@ -98,6 +98,15 @@ In which `hashFiles` and `keyPrefix` will be used to compute the primary cache k
 
 It is recommended to always use absolute paths in these configs so you can share them across different worflows more easily (in case you the action is called from different working directories).
 
+#### How cache keys are computed
+
+The primary key is `${keyPrefix}${hash}`, where `hash` is the SHA256 of:
+
+1. the SHA256 of every file matched by `hashFiles`, concatenated in glob order (this is how GitHub's built-in `hashFiles()` expression works, too), plus
+2. the list of `path`s, so that a cache is automatically invalidated when you change which directories to cache.
+
+Runner specific directories in `path` (`$GITHUB_WORKSPACE`, `$RUNNER_TEMP`, `$RUNNER_TOOL_CACHE`, `$HOME` and `~`) are replaced with placeholders before hashing, so the same config generates the same key on hosted and self-hosted runners even when they check out the repository to different locations.
+
 #### Specify when to restore and save
 
 With the predefined `cache-restore` and `cache-save` bash commands, you have full flexibility on when to restore and save cache:

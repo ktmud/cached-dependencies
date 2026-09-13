@@ -67,6 +67,37 @@ export async function hashFiles(
   return hasha(hash + extra, HASH_OPTION);
 }
 
+// Env variables whose values depend on the runner (and therefore must not
+// leak into cache keys), ordered from the most specific to the least.
+const RUNNER_PATH_VARIABLES = [
+  'GITHUB_WORKSPACE',
+  'RUNNER_TOOL_CACHE',
+  'RUNNER_TEMP',
+  'HOME',
+];
+
+/**
+ * Normalize a cache path for the purpose of computing cache keys.
+ *
+ * The workspace and home directories differ between runners (e.g.
+ * `/home/runner/work/repo/repo` on hosted runners vs. `/runner/_work/repo/repo`
+ * on self-hosted runners), so we replace them with placeholders to make sure
+ * the same cache config always generates the same cache key.
+ */
+export function normalizePathForKey(cachePath: string): string {
+  const normalized = cachePath.replace(/\\/g, '/');
+  if (normalized === '~' || normalized.startsWith('~/')) {
+    return `$HOME${normalized.slice(1)}`;
+  }
+  for (const name of RUNNER_PATH_VARIABLES) {
+    const value = (process.env[name] || '').replace(/\\/g, '/');
+    if (value && (normalized === value || normalized.startsWith(`${value}/`))) {
+      return `$${name}${normalized.slice(value.length)}`;
+    }
+  }
+  return normalized;
+}
+
 /**
  * Generate cache inputs (key, paths, restore keys) based on predefined cache
  * config.
@@ -89,7 +120,10 @@ export async function getCacheInputs(
   const prefix = keyPrefix || `${cacheName}-`;
   // include `path` to hash, too, so to burst caches in case users change
   // the path definition.
-  const hash = await hashFiles(patterns, paths.join('\n'));
+  const hash = await hashFiles(
+    patterns,
+    paths.map(normalizePathForKey).join('\n'),
+  );
   return {
     key: `${prefix}${hash}`,
     paths,

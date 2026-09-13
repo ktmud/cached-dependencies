@@ -40,7 +40,9 @@ async function expectedHash(patterns: string[], paths: string[]) {
       hash += hasha.fromFileSync(file, { algorithm: 'sha256' });
     }
   }
-  return hasha(hash + paths.join('\n'), { algorithm: 'sha256' });
+  return hasha(hash + paths.map(cache.normalizePathForKey).join('\n'), {
+    algorithm: 'sha256',
+  });
 }
 
 describe('cache states', () => {
@@ -235,5 +237,45 @@ describe('cache runner', () => {
     await cache.run('save', 'npm');
 
     expect(processExitMock).toHaveBeenCalledTimes(5);
+  });
+});
+
+describe('normalizePathForKey', () => {
+  const env = { ...process.env };
+  afterEach(() => {
+    process.env = { ...env };
+  });
+
+  it('should replace runner specific directories', () => {
+    process.env.GITHUB_WORKSPACE = '/runner/_work/repo/repo';
+    process.env.HOME = '/runner';
+    expect(
+      cache.normalizePathForKey('/runner/_work/repo/repo/node_modules'),
+    ).toBe('$GITHUB_WORKSPACE/node_modules');
+    expect(cache.normalizePathForKey('/runner/_work/repo/repo')).toBe(
+      '$GITHUB_WORKSPACE',
+    );
+    expect(cache.normalizePathForKey('/runner/.npm')).toBe('$HOME/.npm');
+    expect(cache.normalizePathForKey('/runner2/.npm')).toBe('/runner2/.npm');
+    expect(cache.normalizePathForKey('~/.npm')).toBe('$HOME/.npm');
+    expect(cache.normalizePathForKey('~')).toBe('$HOME');
+    expect(cache.normalizePathForKey('/opt/cache')).toBe('/opt/cache');
+  });
+
+  it('should handle Windows paths', () => {
+    process.env.GITHUB_WORKSPACE = 'D:\\a\\repo\\repo';
+    expect(cache.normalizePathForKey('D:\\a\\repo\\repo\\dist')).toBe(
+      '$GITHUB_WORKSPACE/dist',
+    );
+  });
+
+  it('should generate the same key on different runners', async () => {
+    setInputs({ [InputName.Caches]: fixtureCaches });
+    await cache.loadCustomCacheConfigs();
+    process.env.HOME = '/home/runner';
+    const key1 = (await cache.getCacheInputs('npm'))?.key;
+    process.env.HOME = '/runner';
+    const key2 = (await cache.getCacheInputs('npm'))?.key;
+    expect(key1).toBe(key2);
   });
 });
