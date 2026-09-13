@@ -12,7 +12,7 @@
   "scripts": {
     "all": "npm run format && npm run lint && npm run test && npm run build",
     "build": "npm run clean && tsc && ncc build -o dist src/run.ts && ncc build -o dist/scripts/cache src/scripts/cache.ts",
-    "clean": "rm -rf ./lib ./dist",
+    "clean": "node -e \"for (const dir of ['lib', 'dist']) fs.rmSync(dir, { recursive: true, force: true })\"",
     "coverage": "npm run test && open ./coverage/lcov-report/index.html",
     "format": "prettier --write \"**/*.ts\"",
     "format-check": "prettier --check \"**/*.ts\"",

@@ -8,6 +8,17 @@ import path from 'path';
 
 const extraBashlib = path.resolve(__dirname, './fixtures/bashlib.sh');
 
+describe('toBashPath', () => {
+  it('should convert Windows paths to forward slashes', () => {
+    expect(setup.toBashPath('D:\\a\\_actions\\v1\\src\\bashlib.sh')).toBe(
+      'D:/a/_actions/v1/src/bashlib.sh',
+    );
+    expect(setup.toBashPath('/home/runner/work/bashlib.sh')).toBe(
+      '/home/runner/work/bashlib.sh',
+    );
+  });
+});
+
 describe('setup runner', () => {
   // don't actually run the bash script
   const runCommandMock = jest.spyOn(setup, 'runCommand');

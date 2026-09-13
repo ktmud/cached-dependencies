@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
     name: Test on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
 
@@ -31,6 +31,8 @@ jobs:
     - name: Build
       run: npm run build
     - name: Check that dist is up to date
+      if: runner.os != 'Windows'
+      shell: bash
       run: |
         if [ -n "$(git status --porcelain dist)" ]; then
           echo "::error::dist/ is out of date, please run 'npm run build' and commit the result."
