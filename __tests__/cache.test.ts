@@ -1,32 +1,49 @@
 import path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
+import { createHash } from 'crypto';
+import { fileURLToPath } from 'url';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as core from '@actions/core';
 import * as actionsCache from '@actions/cache';
 import * as glob from '@actions/glob';
-import hasha from 'hasha';
-import * as cache from '../src/cache';
-import { getStateFile, loadState, saveState } from '../src/cache/state';
-import defaultCaches from '../src/cache/caches';
-import { setInputs, toStringArray } from '../src/utils/inputs';
-import { InputName } from '../src/constants';
-import caches from './fixtures/caches';
+import * as cache from '../src/cache/index.js';
+import { getStateFile, loadState, saveState } from '../src/cache/state.js';
+import defaultCaches from '../src/cache/caches.js';
+import { setInputs, toStringArray } from '../src/utils/inputs.js';
+import { InputName } from '../src/constants.js';
+import caches from './fixtures/caches.js';
 
-jest.mock('@actions/cache', () => {
-  const actual = jest.requireActual('@actions/cache');
-  return {
-    ...actual,
-    isFeatureAvailable: jest.fn(() => true),
-    restoreCache: jest.fn(async () => undefined),
-    saveCache: jest.fn(async () => 1),
-  };
-});
+vi.mock('@actions/core', async importOriginal => ({
+  ...(await importOriginal<typeof import('@actions/core')>()),
+  debug: vi.fn(),
+  info: vi.fn(),
+  warning: vi.fn(),
+  error: vi.fn(),
+  setFailed: vi.fn(),
+  startGroup: vi.fn(),
+  endGroup: vi.fn(),
+}));
 
-const restoreCacheMock = actionsCache.restoreCache as jest.Mock;
-const saveCacheMock = actionsCache.saveCache as jest.Mock;
-const isFeatureAvailableMock = actionsCache.isFeatureAvailable as jest.Mock;
+vi.mock('@actions/cache', async importOriginal => ({
+  ...(await importOriginal<typeof import('@actions/cache')>()),
+  isFeatureAvailable: vi.fn(() => true),
+  restoreCache: vi.fn(async () => undefined),
+  saveCache: vi.fn(async () => 1),
+}));
 
-const fixtureCaches = path.resolve(__dirname, 'fixtures/caches');
+const restoreCacheMock = vi.mocked(actionsCache.restoreCache);
+const saveCacheMock = vi.mocked(actionsCache.saveCache);
+const isFeatureAvailableMock = vi.mocked(actionsCache.isFeatureAvailable);
+
+const fixtureCaches = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  'fixtures/caches.ts',
+);
+
+function sha256(content: string | Buffer) {
+  return createHash('sha256').update(content).digest('hex');
+}
 
 /**
  * Compute the expected hash the same way GitHub's `hashFiles` does, plus the
@@ -37,12 +54,10 @@ async function expectedHash(patterns: string[], paths: string[]) {
   let hash = '';
   for (const file of await globber.glob()) {
     if (!fs.statSync(file).isDirectory()) {
-      hash += hasha.fromFileSync(file, { algorithm: 'sha256' });
+      hash += sha256(fs.readFileSync(file));
     }
   }
-  return hasha(hash + paths.map(cache.normalizePathForKey).join('\n'), {
-    algorithm: 'sha256',
-  });
+  return sha256(hash + paths.map(cache.normalizePathForKey).join('\n'));
 }
 
 describe('cache states', () => {
@@ -73,7 +88,7 @@ describe('cache states', () => {
   });
 
   it('should warn if state file is invalid', () => {
-    const warningMock = jest.spyOn(core, 'warning').mockImplementation();
+    const warningMock = vi.mocked(core.warning);
     const stateFile = getStateFile('invalid');
     fs.writeFileSync(stateFile, 'INVALID_JSON', { encoding: 'utf-8' });
     expect(loadState('invalid')).toStrictEqual({});
@@ -110,7 +125,7 @@ describe('cache configs', () => {
   });
 
   it('should exit when custom config does not exist', async () => {
-    const processExitMock = jest
+    const processExitMock = vi
       .spyOn(process, 'exit')
       .mockImplementation((() => {}) as never);
     setInputs({ [InputName.Caches]: 'non-existent' });
@@ -166,8 +181,8 @@ describe('cache runner', () => {
   });
 
   it('should handle cache miss and cache service errors', async () => {
-    const infoMock = jest.spyOn(core, 'info');
-    const warningMock = jest.spyOn(core, 'warning').mockImplementation();
+    const infoMock = vi.mocked(core.info);
+    const warningMock = vi.mocked(core.warning);
 
     await cache.run('restore', 'npm');
     expect(infoMock).toHaveBeenCalledWith(
@@ -190,7 +205,7 @@ describe('cache runner', () => {
   });
 
   it('should skip when cache service is not available', async () => {
-    const warningMock = jest.spyOn(core, 'warning').mockImplementation();
+    const warningMock = vi.mocked(core.warning);
     isFeatureAvailableMock.mockReturnValue(false);
     await cache.run('restore', 'npm');
     await cache.run('save', 'npm');
@@ -204,7 +219,7 @@ describe('cache runner', () => {
   });
 
   it('should check cache existence without downloading', async () => {
-    const warningMock = jest.spyOn(core, 'warning').mockImplementation();
+    const warningMock = vi.mocked(core.warning);
     const inputs = await cache.getCacheInputs('npm');
     const lookupOptions = { lookupOnly: true };
 
@@ -236,10 +251,10 @@ describe('cache runner', () => {
   });
 
   it('should fail on validation errors', async () => {
-    const processExitMock = jest
+    const processExitMock = vi
       .spyOn(process, 'exit')
       .mockImplementation((() => {}) as never);
-    const setFailedMock = jest.spyOn(core, 'setFailed');
+    const setFailedMock = vi.mocked(core.setFailed);
 
     restoreCacheMock.mockRejectedValueOnce(
       new actionsCache.ValidationError('bad key'),
@@ -261,7 +276,7 @@ describe('cache runner', () => {
   });
 
   it('should exit on invalid args', async () => {
-    const processExitMock = jest
+    const processExitMock = vi
       .spyOn(process, 'exit')
       .mockImplementation((() => {}) as never);
 

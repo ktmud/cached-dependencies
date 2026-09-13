@@ -7,7 +7,7 @@ import {
   EnvVariableNames,
   InputName,
   DefaultInputs,
-} from '../constants';
+} from '../constants.js';
 
 export function getInput(name: keyof Inputs): string {
   const value = core.getInput(name);

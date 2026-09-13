@@ -5,10 +5,14 @@ import * as core from '@actions/core';
 import { exec } from '@actions/exec';
 import path from 'path';
 import fs from 'fs';
-import { DefaultInputs, EnvVariable, InputName } from './constants';
-import { getInput } from './utils/inputs';
+import { fileURLToPath } from 'url';
+import { DefaultInputs, EnvVariable, InputName } from './constants.js';
+import { getInput } from './utils/inputs.js';
 
-const SHARED_BASHLIB = path.resolve(__dirname, '../src/scripts/bashlib.sh');
+const SHARED_BASHLIB = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '../src/scripts/bashlib.sh',
+);
 
 /**
  * Convert a file path to a form that is safe to use inside bash scripts on
@@ -48,7 +52,15 @@ export async function runCommand(
   }
 }
 
-export async function run(): Promise<void> {
+export type CommandRunner = typeof runCommand;
+
+/**
+ * Parse inputs and run the setup commands.
+ *
+ * @param {CommandRunner} runner - The function used to execute commands,
+ *                                 overridable for testing.
+ */
+export async function run(runner: CommandRunner = runCommand): Promise<void> {
   let bashlib = getInput(InputName.Bashlib);
   const rawCommands = getInput(InputName.Run);
   const runInParallel = getInput(InputName.Parallel);
@@ -75,9 +87,9 @@ export async function run(): Promise<void> {
       commands
         .map(x => x.trim())
         .filter(x => !!x)
-        .map(cmd => exports.runCommand(cmd, bashlib)),
+        .map(cmd => runner(cmd, bashlib)),
     );
   } else if (rawCommands) {
-    await exports.runCommand(rawCommands, bashlib);
+    await runner(rawCommands, bashlib);
   }
 }
