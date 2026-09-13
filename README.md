@@ -12,6 +12,7 @@ This is your all-in-one action for everything related to setting up dependencies
 
 - The action runs on the `node20` runtime bundled with the GitHub Actions runner.
 - The `cache-restore` and `cache-save` commands always use the same Node.js binary that runs the action, so the Node.js version you set up with `actions/setup-node` (or whatever `node` is in `PATH`) does not matter.
+- Linux, macOS and Windows runners are supported. On Windows, commands run in the Git Bash that ships with the runner, so `run` and `bashlib` are still written in bash.
 - Caches are stored via the [`@actions/cache`](https://github.com/actions/toolkit/tree/main/packages/cache) toolkit and share the same storage, limits and eviction policies as [actions/cache](https://github.com/actions/cache).
 
 ## Inputs
@@ -67,7 +68,7 @@ See below for more details.
 
 Under the hood, we use the [@actions/cache](https://github.com/actions/toolkit/tree/main/packages/cache) toolkit (the same library that powers [actions/cache](https://github.com/marketplace/actions/cache)) to manage cache storage. But instead of defining only one cache at a time and specify them in workflow YAMLs, you manage all caches in a spearate JS file: `.github/workflows/caches.js`.
 
-Here is [the default configuration](https://github.com/ktmud/cached-dependencies/blob/master/src/cache/caches.ts) for Linux:
+Here is [the default configuration](https://github.com/ktmud/cached-dependencies/blob/master/src/cache/caches.ts) for Linux (the `pip` and `npm` cache paths are adjusted for macOS and Windows):
 
 ```js
 module.exports = {

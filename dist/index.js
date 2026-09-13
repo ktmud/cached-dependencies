@@ -31747,6 +31747,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.toBashPath = toBashPath;
 exports.runCommand = runCommand;
 exports.run = run;
 /**
@@ -31760,14 +31761,23 @@ const constants_1 = __nccwpck_require__(7242);
 const inputs_1 = __nccwpck_require__(9612);
 const SHARED_BASHLIB = path_1.default.resolve(__dirname, '../src/scripts/bashlib.sh');
 /**
+ * Convert a file path to a form that is safe to use inside bash scripts on
+ * all platforms. On Windows, paths like `D:\a\repo\file.sh` must be written
+ * as `D:/a/repo/file.sh`, otherwise the backslashes are interpreted as escape
+ * characters by bash.
+ */
+function toBashPath(filePath) {
+    return filePath.replace(/\\/g, '/');
+}
+/**
  * Run bash commands with predefined lib functions.
  *
  * @param {string} cmd - The bash commands to execute.
  */
 async function runCommand(cmd, extraBashlib) {
-    const bashlibCommands = [`source ${SHARED_BASHLIB}`];
+    const bashlibCommands = [`source "${toBashPath(SHARED_BASHLIB)}"`];
     if (extraBashlib) {
-        bashlibCommands.push(`source ${extraBashlib}`);
+        bashlibCommands.push(`source "${toBashPath(extraBashlib)}"`);
     }
     try {
         await (0, exec_1.exec)('bash', ['-c', [...bashlibCommands, cmd].join('\n     ')], {
@@ -31775,7 +31785,7 @@ async function runCommand(cmd, extraBashlib) {
                 ...process.env,
                 // let `cache-restore` and `cache-save` use the same node binary that
                 // runs this action, instead of whatever `node` is found in PATH.
-                [constants_1.EnvVariable.NodeBinary]: process.execPath,
+                [constants_1.EnvVariable.NodeBinary]: toBashPath(process.execPath),
             },
         });
     }

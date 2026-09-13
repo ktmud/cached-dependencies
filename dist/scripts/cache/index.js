@@ -47296,26 +47296,33 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
  * Default cache configs
  */
 const os = __importStar(__nccwpck_require__(70857));
-const { HOME = '~' } = process.env;
+const path = __importStar(__nccwpck_require__(16928));
+// `os.homedir()` honors `$HOME` on Linux/macOS and `%USERPROFILE%` on Windows
+const HOME = os.homedir();
+const LOCALAPPDATA = process.env.LOCALAPPDATA || path.join(HOME, 'AppData', 'Local');
 const platform = os.platform();
 const pathByPlatform = {
     linux: {
         pip: `${HOME}/.cache/pip`,
+        npm: `${HOME}/.npm`,
     },
     darwin: {
         pip: `${HOME}/Library/Caches/pip`,
+        npm: `${HOME}/.npm`,
     },
     win32: {
-        pip: `${HOME}\\AppData\\Local\\pip\\Cache`,
+        pip: path.join(LOCALAPPDATA, 'pip', 'Cache'),
+        npm: path.join(LOCALAPPDATA, 'npm-cache'),
     },
 };
+const platformPaths = pathByPlatform[platform] || pathByPlatform.linux;
 exports["default"] = {
     pip: {
-        path: pathByPlatform[platform].pip,
+        path: platformPaths.pip,
         hashFiles: 'requirements*.txt',
     },
     npm: {
-        path: `${HOME}/.npm`,
+        path: platformPaths.npm,
         hashFiles: [
             `package-lock.json`,
             // support lerna monorepo with depth=2

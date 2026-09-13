@@ -7,21 +7,21 @@
 set -e
 
 bashSource=${BASH_SOURCE[${#BASH_SOURCE[@]} - 1]:-${(%):-%x}}
-cacheScript="$(dirname $(dirname $(dirname $bashSource)))/dist/scripts/cache"
+cacheScript="$(dirname "$(dirname "$(dirname "$bashSource")")")/dist/scripts/cache"
 # Use the same node binary that runs the action (set by the action itself),
 # fallback to whatever `node` is in PATH when running the scripts manually.
 cacheNode="${CACHED_DEPENDENCIES_NODE:-node}"
 
 print-cachescript-path() {
-  echo $cacheScript
+  echo "$cacheScript"
 }
 
 cache-restore() {
-  "$cacheNode" $cacheScript restore $1
+  "$cacheNode" "$cacheScript" restore "$1"
 }
 
 cache-save() {
-  "$cacheNode" $cacheScript save $1
+  "$cacheNode" "$cacheScript" save "$1"
 }
 
 # install python packages

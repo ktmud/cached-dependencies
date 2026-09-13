@@ -2,6 +2,7 @@
  * Default cache configs
  */
 import * as os from 'os';
+import * as path from 'path';
 
 export interface CacheConfig {
   path: string[] | string;
@@ -14,27 +15,36 @@ export interface CacheConfigs {
   [cacheName: string]: CacheConfig;
 }
 
-const { HOME = '~' } = process.env;
-const platform = os.platform() as 'linux' | 'darwin' | 'win32';
-const pathByPlatform = {
+// `os.homedir()` honors `$HOME` on Linux/macOS and `%USERPROFILE%` on Windows
+const HOME = os.homedir();
+const LOCALAPPDATA =
+  process.env.LOCALAPPDATA || path.join(HOME, 'AppData', 'Local');
+const platform = os.platform();
+const pathByPlatform: {
+  [platform: string]: { pip: string; npm: string };
+} = {
   linux: {
     pip: `${HOME}/.cache/pip`,
+    npm: `${HOME}/.npm`,
   },
   darwin: {
     pip: `${HOME}/Library/Caches/pip`,
+    npm: `${HOME}/.npm`,
   },
   win32: {
-    pip: `${HOME}\\AppData\\Local\\pip\\Cache`,
+    pip: path.join(LOCALAPPDATA, 'pip', 'Cache'),
+    npm: path.join(LOCALAPPDATA, 'npm-cache'),
   },
 };
+const platformPaths = pathByPlatform[platform] || pathByPlatform.linux;
 
 export default {
   pip: {
-    path: pathByPlatform[platform].pip,
+    path: platformPaths.pip,
     hashFiles: 'requirements*.txt',
   },
   npm: {
-    path: `${HOME}/.npm`,
+    path: platformPaths.npm,
     hashFiles: [
       `package-lock.json`,
       // support lerna monorepo with depth=2
