@@ -2,109 +2,226 @@ import path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as core from '@actions/core';
+import * as actionsCache from '@actions/cache';
+import * as glob from '@actions/glob';
+import hasha from 'hasha';
 import * as cache from '../src/cache';
-import * as inputsUtils from '../src/utils/inputs';
-import * as actionUtils from '@actions/cache/src/utils/actionUtils';
+import { getStateFile, loadState, saveState } from '../src/cache/state';
 import defaultCaches from '../src/cache/caches';
-import { setInputs, getInput, maybeArrayToString } from '../src/utils/inputs';
-import { Inputs, InputName, GitHubEvent, EnvVariable } from '../src/constants';
-import caches, { npmExpectedHash } from './fixtures/caches';
+import { setInputs, toStringArray } from '../src/utils/inputs';
+import { InputName } from '../src/constants';
+import caches from './fixtures/caches';
 
-describe('patch core states', () => {
-  it('should log error if states file invalid', () => {
-    const logWarningMock = jest.spyOn(actionUtils, 'logWarning');
-    fs.writeFileSync(`${os.tmpdir()}/cached--states.json`, 'INVALID_JSON', {
-      encoding: 'utf-8',
+jest.mock('@actions/cache', () => {
+  const actual = jest.requireActual('@actions/cache');
+  return {
+    ...actual,
+    isFeatureAvailable: jest.fn(() => true),
+    restoreCache: jest.fn(async () => undefined),
+    saveCache: jest.fn(async () => 1),
+  };
+});
+
+const restoreCacheMock = actionsCache.restoreCache as jest.Mock;
+const saveCacheMock = actionsCache.saveCache as jest.Mock;
+const isFeatureAvailableMock = actionsCache.isFeatureAvailable as jest.Mock;
+
+const fixtureCaches = path.resolve(__dirname, 'fixtures/caches');
+
+/**
+ * Compute the expected hash the same way GitHub's `hashFiles` does, plus the
+ * cache paths.
+ */
+async function expectedHash(patterns: string[], paths: string[]) {
+  const globber = await glob.create(patterns.join('\n'));
+  let hash = '';
+  for (const file of await globber.glob()) {
+    if (!fs.statSync(file).isDirectory()) {
+      hash += hasha.fromFileSync(file, { algorithm: 'sha256' });
+    }
+  }
+  return hasha(hash + paths.join('\n'), { algorithm: 'sha256' });
+}
+
+describe('cache states', () => {
+  it('should persist state in a temp file', () => {
+    const stateFile = getStateFile('test/cache');
+    expect(stateFile.startsWith(process.env.RUNNER_TEMP || os.tmpdir())).toBe(
+      true,
+    );
+    expect(path.basename(stateFile)).toBe(
+      `cached-dependencies-${[
+        process.env.GITHUB_RUN_ID,
+        process.env.GITHUB_RUN_ATTEMPT,
+        'test_cache-state.json',
+      ]
+        .filter(x => !!x)
+        .join('-')}`,
+    );
+    fs.rmSync(stateFile, { force: true });
+
+    expect(loadState('test/cache')).toStrictEqual({});
+    saveState('test/cache', { primaryKey: 'a' });
+    saveState('test/cache', { matchedKey: 'b' });
+    expect(loadState('test/cache')).toStrictEqual({
+      primaryKey: 'a',
+      matchedKey: 'b',
     });
-    core.getState('haha');
-    expect(logWarningMock).toHaveBeenCalledTimes(2);
+    fs.rmSync(stateFile, { force: true });
   });
-  it('should persist state', () => {
-    core.saveState('test', '100');
-    expect(core.getState('test')).toStrictEqual('100');
+
+  it('should warn if state file is invalid', () => {
+    const warningMock = jest.spyOn(core, 'warning').mockImplementation();
+    const stateFile = getStateFile('invalid');
+    fs.writeFileSync(stateFile, 'INVALID_JSON', { encoding: 'utf-8' });
+    expect(loadState('invalid')).toStrictEqual({});
+    expect(warningMock).toHaveBeenCalledTimes(1);
+    fs.rmSync(stateFile, { force: true });
+  });
+});
+
+describe('cache configs', () => {
+  it('should use default cache config', async () => {
+    setInputs({ [InputName.Caches]: '' });
+    expect(await cache.loadCustomCacheConfigs()).toBe(true);
+    const inputs = await cache.getCacheInputs('npm');
+    expect(inputs?.paths).toStrictEqual(toStringArray(defaultCaches.npm.path));
+    expect(inputs?.restoreKeys).toStrictEqual(['npm-']);
+    expect(inputs?.key.startsWith('npm-')).toBe(true);
+  });
+
+  it('should return null for unknown cache', async () => {
+    expect(await cache.getCacheInputs('unknown-cache')).toBeNull();
+  });
+
+  it('should override cache config', async () => {
+    setInputs({ [InputName.Caches]: fixtureCaches });
+    expect(await cache.loadCustomCacheConfigs()).toBe(true);
+
+    const inputs = await cache.getCacheInputs('npm');
+    const paths = toStringArray(caches.npm.path);
+    expect(inputs).toStrictEqual({
+      key: `npm-${await expectedHash(caches.npm.hashFiles, paths)}`,
+      paths,
+      restoreKeys: [caches.npm.restoreKeys],
+    });
+  });
+
+  it('should exit when custom config does not exist', async () => {
+    const processExitMock = jest
+      .spyOn(process, 'exit')
+      .mockImplementation((() => {}) as never);
+    setInputs({ [InputName.Caches]: 'non-existent' });
+    expect(await cache.loadCustomCacheConfigs()).toBe(false);
+    expect(processExitMock).toHaveBeenCalledWith(1);
   });
 });
 
 describe('cache runner', () => {
-  it('should use default cache config', async () => {
-    await cache.loadCustomCacheConfigs();
-    // but `npm` actually come from `src/cache/caches.ts`
-    const inputs = await cache.getCacheInputs('npm');
-    expect(inputs?.[InputName.Path]).toStrictEqual(
-      maybeArrayToString(defaultCaches.npm.path),
-    );
-    expect(inputs?.[InputName.RestoreKeys]).toStrictEqual('npm-');
+  beforeEach(() => {
+    setInputs({
+      [InputName.Caches]: fixtureCaches,
+      [InputName.Parallel]: '',
+    });
+    fs.rmSync(getStateFile('npm'), { force: true });
   });
 
-  it('should override cache config', async () => {
-    setInputs({
-      [InputName.Caches]: path.resolve(__dirname, 'fixtures/caches'),
-    });
-    await cache.loadCustomCacheConfigs();
-
+  it('should restore and skip save on exact key match', async () => {
     const inputs = await cache.getCacheInputs('npm');
-    expect(inputs?.[InputName.Path]).toStrictEqual(
-      maybeArrayToString(caches.npm.path),
+    restoreCacheMock.mockResolvedValueOnce(inputs?.key);
+
+    await cache.run('restore', 'npm');
+    expect(restoreCacheMock).toHaveBeenCalledWith(
+      inputs?.paths,
+      inputs?.key,
+      inputs?.restoreKeys,
     );
-    expect(inputs?.[InputName.Key]).toStrictEqual(`npm-${npmExpectedHash}`);
-    expect(inputs?.[InputName.RestoreKeys]).toStrictEqual(
-      maybeArrayToString(caches.npm.restoreKeys),
-    );
-  });
-
-  it('should apply inputs and restore cache', async () => {
-    setInputs({
-      [InputName.Caches]: path.resolve(__dirname, 'fixtures/caches'),
-      [EnvVariable.GitHubEventName]: GitHubEvent.PullRequest,
+    expect(loadState('npm')).toStrictEqual({
+      primaryKey: inputs?.key,
+      matchedKey: inputs?.key,
     });
 
-    const setInputsMock = jest.spyOn(inputsUtils, 'setInputs');
-    const inputs = await cache.getCacheInputs('npm');
-    const result = await cache.run('restore', 'npm');
-
-    expect(result).toBeUndefined();
-
-    // before run
-    expect(setInputsMock).toHaveBeenNthCalledWith(1, inputs);
-
-    // after run
-    expect(setInputsMock).toHaveBeenNthCalledWith(2, {
-      [InputName.Key]: '',
-      [InputName.Path]: '',
-      [InputName.RestoreKeys]: '',
-    });
-
-    // inputs actually restored to original value
-    expect(getInput(InputName.Key)).toStrictEqual('');
-
-    // pretend still in execution context
-    setInputs(inputs as Inputs);
-
-    // `core.getState` should return the primary key
-    expect(core.getState('CACHE_KEY')).toStrictEqual(inputs?.[InputName.Key]);
-
-    setInputsMock.mockRestore();
-  });
-
-  it('should run saveCache', async () => {
-    // call to save should also work
-    const logWarningMock = jest.spyOn(actionUtils, 'logWarning');
-
-    setInputs({
-      [InputName.Parallel]: 'true',
-    });
     await cache.run('save', 'npm');
-    expect(logWarningMock).toHaveBeenCalledWith(
-      'Cache Service Url not found, unable to restore cache.',
+    expect(saveCacheMock).not.toHaveBeenCalled();
+  });
+
+  it('should save when restored from a fallback key', async () => {
+    const inputs = await cache.getCacheInputs('npm');
+    restoreCacheMock.mockResolvedValueOnce('node-npm-outdated');
+
+    await cache.run('restore', 'npm');
+    expect(loadState('npm').matchedKey).toBe('node-npm-outdated');
+
+    await cache.run('save', 'npm');
+    expect(saveCacheMock).toHaveBeenCalledWith(inputs?.paths, inputs?.key);
+  });
+
+  it('should save without a prior restore', async () => {
+    setInputs({ [InputName.Parallel]: 'true' });
+    const inputs = await cache.getCacheInputs('npm');
+    await cache.run('save', 'npm');
+    expect(saveCacheMock).toHaveBeenCalledWith(inputs?.paths, inputs?.key);
+  });
+
+  it('should handle cache miss and cache service errors', async () => {
+    const infoMock = jest.spyOn(core, 'info');
+    const warningMock = jest.spyOn(core, 'warning').mockImplementation();
+
+    await cache.run('restore', 'npm');
+    expect(infoMock).toHaveBeenCalledWith(
+      expect.stringMatching(/^Cache not found for input keys: npm-/),
     );
+
+    restoreCacheMock.mockRejectedValueOnce(new Error('network error'));
+    await cache.run('restore', 'npm');
+    expect(warningMock).toHaveBeenCalledWith('network error');
+
+    saveCacheMock.mockRejectedValueOnce(
+      new actionsCache.ReserveCacheError('already exists'),
+    );
+    await cache.run('save', 'npm');
+    expect(infoMock).toHaveBeenCalledWith('already exists');
+
+    saveCacheMock.mockRejectedValueOnce(new Error('upload failed'));
+    await cache.run('save', 'npm');
+    expect(warningMock).toHaveBeenCalledWith('upload failed');
+  });
+
+  it('should skip when cache service is not available', async () => {
+    const warningMock = jest.spyOn(core, 'warning').mockImplementation();
+    isFeatureAvailableMock.mockReturnValue(false);
+    await cache.run('restore', 'npm');
+    await cache.run('save', 'npm');
+    isFeatureAvailableMock.mockReturnValue(true);
+    expect(restoreCacheMock).not.toHaveBeenCalled();
+    expect(saveCacheMock).not.toHaveBeenCalled();
+    expect(warningMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('should fail on validation errors', async () => {
+    const processExitMock = jest
+      .spyOn(process, 'exit')
+      .mockImplementation((() => {}) as never);
+    const setFailedMock = jest.spyOn(core, 'setFailed');
+
+    restoreCacheMock.mockRejectedValueOnce(
+      new actionsCache.ValidationError('bad key'),
+    );
+    await cache.run('restore', 'npm');
+    saveCacheMock.mockRejectedValueOnce(
+      new actionsCache.ValidationError('bad path'),
+    );
+    await cache.run('save', 'npm');
+
+    expect(setFailedMock).toHaveBeenCalledWith('bad key');
+    expect(setFailedMock).toHaveBeenCalledWith('bad path');
+    expect(processExitMock).toHaveBeenCalledTimes(2);
   });
 
   it('should exit on invalid args', async () => {
-    // other calls do generate errors
     const processExitMock = jest
       .spyOn(process, 'exit')
-      // @ts-ignore
-      .mockImplementation(() => {});
+      .mockImplementation((() => {}) as never);
 
     // incomplete arguments
     await cache.run();
@@ -114,9 +231,7 @@ describe('cache runner', () => {
     await cache.run('save', 'unknown-cache');
     await cache.run('unknown-action', 'unknown-cache');
 
-    setInputs({
-      [InputName.Caches]: 'non-existent',
-    });
+    setInputs({ [InputName.Caches]: 'non-existent' });
     await cache.run('save', 'npm');
 
     expect(processExitMock).toHaveBeenCalledTimes(5);

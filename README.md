@@ -8,6 +8,12 @@ Manage multiple cache targets in one step. Use either the built-in cache configs
 
 This is your all-in-one action for everything related to setting up dependencies with cache.
 
+## Requirements
+
+- The action runs on the `node20` runtime bundled with the GitHub Actions runner.
+- The `cache-restore` and `cache-save` commands always use the same Node.js binary that runs the action, so the Node.js version you set up with `actions/setup-node` (or whatever `node` is in `PATH`) does not matter.
+- Caches are stored via the [`@actions/cache`](https://github.com/actions/toolkit/tree/main/packages/cache) toolkit and share the same storage, limits and eviction policies as [actions/cache](https://github.com/actions/cache).
+
 ## Inputs
 
 - **run**: bash commands to run, allows shortcut commands
@@ -59,7 +65,7 @@ See below for more details.
 
 ### Cache configs
 
-Under the hood, we use [@actions/cache](https://github.com/marketplace/actions/cache) to manage cache storage. But instead of defining only one cache at a time and specify them in workflow YAMLs, you manage all caches in a spearate JS file: `.github/workflows/caches.js`.
+Under the hood, we use the [@actions/cache](https://github.com/actions/toolkit/tree/main/packages/cache) toolkit (the same library that powers [actions/cache](https://github.com/marketplace/actions/cache)) to manage cache storage. But instead of defining only one cache at a time and specify them in workflow YAMLs, you manage all caches in a spearate JS file: `.github/workflows/caches.js`.
 
 Here is [the default configuration](https://github.com/ktmud/cached-dependencies/blob/master/src/cache/caches.ts) for Linux:
 
@@ -91,9 +97,9 @@ In which `hashFiles` and `keyPrefix` will be used to compute the primary cache k
 
 It is recommended to always use absolute paths in these configs so you can share them across different worflows more easily (in case you the action is called from different working directories).
 
-#### Speficy when to restore and save
+#### Specify when to restore and save
 
-With the predefined `cache-store` and `cache-save` bash commands, you have full flexibility on when to restore and save cache:
+With the predefined `cache-restore` and `cache-save` bash commands, you have full flexibility on when to restore and save cache:
 
 ```yaml
 steps:
@@ -109,6 +115,8 @@ steps:
       pip install -r requirements.txt
       cache-save pip
 ```
+
+`cache-save` is skipped when `cache-restore` found a cache with the exact same primary key. It is also fine to call `cache-save` without a prior `cache-restore`, e.g. to save build artifacts to be reused by later jobs.
 
 ### Shortcut commands
 
