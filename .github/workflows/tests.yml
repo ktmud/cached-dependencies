@@ -11,24 +11,35 @@ on:
 jobs:
   test:
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest, macOS-latest]
+        os: [ubuntu-latest, macos-latest]
     name: Test on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
-    
+
     steps:
-    - uses: actions/checkout@v1
-    - uses: actions/setup-node@v1
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
       with:
-        node-version: '12.x'
+        node-version: '20'
     - name: Install dependencies
       run: npm ci
     - name: Run prettier format check
       run: npm run format-check
+    - name: Lint
+      run: npm run lint
     - name: Build
       run: npm run build
+    - name: Check that dist is up to date
+      run: |
+        if [ -n "$(git status --porcelain dist)" ]; then
+          echo "::error::dist/ is out of date, please run 'npm run build' and commit the result."
+          git status --porcelain dist
+          exit 1
+        fi
     - name: Run tests
       run: npm run test
     - name: Upload code coverage
-      run: |
-        bash <(curl -s https://codecov.io/bash)
+      uses: codecov/codecov-action@v4
+      with:
+        fail_ci_if_error: false

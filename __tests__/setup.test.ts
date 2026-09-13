@@ -27,8 +27,7 @@ describe('setup runner', () => {
   it('should allow inline bash overrides', async () => {
     const processExitMock = jest
       .spyOn(process, 'exit')
-      // @ts-ignore
-      .mockImplementation(() => {});
+      .mockImplementation((() => {}) as never);
 
     setInputs({
       [InputName.Bashlib]: '',

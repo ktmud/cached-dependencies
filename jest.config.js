@@ -4,18 +4,22 @@ module.exports = {
   testEnvironment: 'node',
   testMatch: ['**/*.test.ts'],
   transform: {
-    '^.+\\.ts$': 'ts-jest',
+    '^.+\\.ts$': ['ts-jest', { tsconfig: '__tests__/tsconfig.json' }],
   },
-  transformIgnorePatterns: [
-    '/node_modules/(?!@actions).+\\.js$',
-  ],
   verbose: true,
 };
 
 // suppress debug messages
 const processStdoutWrite = process.stdout.write.bind(process.stdout);
-process.stdout.write = (str, encoding, cb) => {
-  processStdoutWrite(str.split('\n').filter(x => {
-    return !/^::debug::/.test(x);
-  }).join('\n'), encoding, cb);
+process.stdout.write = (chunk, encoding, cb) => {
+  processStdoutWrite(
+    String(chunk)
+      .split('\n')
+      .filter(x => {
+        return !/^::debug::/.test(x);
+      })
+      .join('\n'),
+    encoding,
+    cb,
+  );
 };

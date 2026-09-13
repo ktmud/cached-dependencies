@@ -1,19 +1,16 @@
 {
   "compilerOptions": {
-    "target": "es6",
+    "target": "es2022",
     "module": "commonjs",
-    "lib": ["esnext"],
+    "lib": ["es2022"],
     "moduleResolution": "node",
     "outDir": "./lib",
     "rootDir": ".",
     "strict": true,
     "noImplicitAny": true,
     "esModuleInterop": true,
-    "preserveSymlinks": true
+    "skipLibCheck": true
   },
-  "include": [
-    "./src",
-    "./node_modules/@actions"
-  ],
+  "include": ["./src"],
   "exclude": ["**/*.test.ts", "__tests__"]
 }

@@ -5,7 +5,7 @@ import * as core from '@actions/core';
 import { exec } from '@actions/exec';
 import path from 'path';
 import fs from 'fs';
-import { DefaultInputs, InputName } from './constants';
+import { DefaultInputs, EnvVariable, InputName } from './constants';
 import { getInput } from './utils/inputs';
 
 const SHARED_BASHLIB = path.resolve(__dirname, '../src/scripts/bashlib.sh');
@@ -24,9 +24,16 @@ export async function runCommand(
     bashlibCommands.push(`source ${extraBashlib}`);
   }
   try {
-    await exec('bash', ['-c', [...bashlibCommands, cmd].join('\n     ')]);
+    await exec('bash', ['-c', [...bashlibCommands, cmd].join('\n     ')], {
+      env: {
+        ...process.env,
+        // let `cache-restore` and `cache-save` use the same node binary that
+        // runs this action, instead of whatever `node` is found in PATH.
+        [EnvVariable.NodeBinary]: process.execPath,
+      },
+    });
   } catch (error) {
-    core.setFailed(error.message);
+    core.setFailed((error as Error).message);
     process.exit(1);
   }
 }

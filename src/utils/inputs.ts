@@ -33,29 +33,9 @@ export function setInputs(inputs: Inputs): void {
 }
 
 /**
- * Apply new inputs and execute a runner function, restore them when done.
- *
- * @param {Inputs} inputs - The new inputs to apply to the env variables before
- *                          excuting the runner.
- * @param {runner} runner - The runner function that returns a promise.
- * @returns {Promise<any>} - The result from the runner function.
+ * Convert a string or a list of strings to a list of non-empty strings.
  */
-export async function applyInputs(
-  inputs: Inputs,
-  runner: () => Promise<void>,
-): Promise<any> {
-  const originalInputs: Inputs = Object.fromEntries(
-    Object.keys(inputs).map(name => [
-      name,
-      EnvVariableNames.has(name) ? process.env[name] : core.getInput(name),
-    ]),
-  );
-  exports.setInputs(inputs);
-  const result = await runner();
-  exports.setInputs(originalInputs);
-  return result;
-}
-
-export function maybeArrayToString(input: string[] | string) {
-  return Array.isArray(input) ? input.join('\n') : input;
+export function toStringArray(input: string[] | string | undefined): string[] {
+  const items = Array.isArray(input) ? input : (input || '').split('\n');
+  return items.map(x => x.trim()).filter(x => !!x);
 }
