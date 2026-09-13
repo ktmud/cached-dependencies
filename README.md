@@ -8,6 +8,17 @@ Manage multiple cache targets in one step. Use either the built-in cache configs
 
 This is your all-in-one action for everything related to setting up dependencies with cache.
 
+## Migrating from v1
+
+v2 is a drop-in replacement for most workflows. Update `uses: ktmud/cached-dependencies@v1` to `@v2` and note the following:
+
+- v1 stopped working when GitHub retired the legacy cache service in 2025. v2 uses the current `@actions/cache` toolkit.
+- The action runs on the `node24` runtime, so self-hosted runners must be on a version that supports it (2.327 or newer).
+- `cache-restore` and `cache-save` no longer depend on the `node` in `PATH`, so any `actions/setup-node` version works.
+- Cache keys for paths under `$HOME` or `$GITHUB_WORKSPACE` (including the default `npm`, `pip` and `yarn` configs) change once, so the first run sees a cache miss and saves under the new key.
+- Windows runners are supported.
+- New `cache-check` command, and `cache-save` works without a prior `cache-restore`.
+
 ## Requirements
 
 - The action runs on the `node24` runtime bundled with the GitHub Actions runner.
@@ -32,9 +43,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
     - name: Install dependencies
-      uses: ktmud/cached-dependencies@v1
+      uses: ktmud/cached-dependencies@v2
       with:
         run: |
           npm-install
@@ -50,7 +61,7 @@ You may also replace `npm-install` with `yarn-install` to install npm pacakges w
 
 ```yaml
 - name: Install dependencies
-  uses: ktmud/cached-dependencies@v1
+  uses: ktmud/cached-dependencies@v2
   with:
     run: |
       yarn-install
@@ -113,8 +124,8 @@ With the predefined `cache-restore` and `cache-save` bash commands, you have ful
 
 ```yaml
 steps:
-- uses: actions/checkout@v2
-- uses: ktmud/cached-dependencies@v1
+- uses: actions/checkout@v4
+- uses: ktmud/cached-dependencies@v2
   with:
     run: |
       cache-restore npm
@@ -134,8 +145,8 @@ steps:
 
 ```yaml
 steps:
-- uses: actions/checkout@v2
-- uses: ktmud/cached-dependencies@v1
+- uses: actions/checkout@v4
+- uses: ktmud/cached-dependencies@v2
   with:
     run: |
       if cache-check npm; then
@@ -186,7 +197,7 @@ jobs:
   name: Build
   steps:
     - name: Install dependencies
-      uses: ktmud/cached-depdencies@v1
+      uses: ktmud/cached-dependencies@v2
 ```
 
 You must provide a `default-setup-command` in the bashlib. For example,
@@ -204,7 +215,7 @@ This will start installing pip and npm dependencies at the same time.
 Both the two config files, `.github/workflows/bashlib.sh` and `.github/workflows/caches.js`, can be placed in other locations:
 
 ```yaml
-- uses: ktmud/cached-dependencies@v1
+- uses: ktmud/cached-dependencies@v2
   with:
     caches: ${{ github.workspace }}/.github/configs/caches.js
     bashlib: ${{ github.workspace }}/.github/configs/bashlib.sh
@@ -215,7 +226,7 @@ Both the two config files, `.github/workflows/bashlib.sh` and `.github/workflows
 When `parallel` is set to `true`, the `run` input will be split into an array of commands and passed to `Promise.all(...)` to execute in parallel. For example,
 
 ```yaml
-- uses: ktmud/cached-dependencies@v1
+- uses: ktmud/cached-dependencies@v2
   with:
     parallel: true
     run: |
@@ -226,7 +237,7 @@ When `parallel` is set to `true`, the `run` input will be split into an array of
 is equivalent to
 
 ```yaml
-- uses: ktmud/cached-dependencies@v1
+- uses: ktmud/cached-dependencies@v2
   with:
     run: |
       pip-install & npm-install
@@ -235,7 +246,7 @@ is equivalent to
 If one or more of your commands must spread across multiple lines, you can add a new line between the parallel commands. Each command within a parallel group will still run sequentially.
 
 ```yaml
-- uses: ktmud/cached-dependencies@v1
+- uses: ktmud/cached-dependencies@v2
   with:
     run: |
       cache-restore pip
