@@ -194,10 +194,45 @@ describe('cache runner', () => {
     isFeatureAvailableMock.mockReturnValue(false);
     await cache.run('restore', 'npm');
     await cache.run('save', 'npm');
+    await cache.run('check', 'npm');
     isFeatureAvailableMock.mockReturnValue(true);
     expect(restoreCacheMock).not.toHaveBeenCalled();
     expect(saveCacheMock).not.toHaveBeenCalled();
-    expect(warningMock).toHaveBeenCalledTimes(2);
+    expect(warningMock).toHaveBeenCalledTimes(3);
+    expect(process.exitCode).toBe(cache.CheckResult.NotFound);
+    process.exitCode = 0;
+  });
+
+  it('should check cache existence without downloading', async () => {
+    const warningMock = jest.spyOn(core, 'warning').mockImplementation();
+    const inputs = await cache.getCacheInputs('npm');
+    const lookupOptions = { lookupOnly: true };
+
+    await cache.run('check', 'npm');
+    expect(restoreCacheMock).toHaveBeenCalledWith(
+      inputs?.paths,
+      inputs?.key,
+      inputs?.restoreKeys,
+      lookupOptions,
+    );
+    expect(process.exitCode).toBe(cache.CheckResult.NotFound);
+
+    restoreCacheMock.mockResolvedValueOnce(inputs?.key);
+    await cache.run('check', 'npm');
+    expect(process.exitCode).toBe(cache.CheckResult.ExactMatch);
+
+    restoreCacheMock.mockResolvedValueOnce('node-npm-outdated');
+    await cache.run('check', 'npm');
+    expect(process.exitCode).toBe(cache.CheckResult.PartialMatch);
+
+    restoreCacheMock.mockRejectedValueOnce(new Error('network error'));
+    await cache.run('check', 'npm');
+    expect(warningMock).toHaveBeenCalledWith('network error');
+    expect(process.exitCode).toBe(cache.CheckResult.NotFound);
+
+    // checking should not affect states used by `save`
+    expect(loadState('npm')).toStrictEqual({});
+    process.exitCode = 0;
   });
 
   it('should fail on validation errors', async () => {
@@ -214,10 +249,15 @@ describe('cache runner', () => {
       new actionsCache.ValidationError('bad path'),
     );
     await cache.run('save', 'npm');
+    restoreCacheMock.mockRejectedValueOnce(
+      new actionsCache.ValidationError('bad check'),
+    );
+    await cache.run('check', 'npm');
 
     expect(setFailedMock).toHaveBeenCalledWith('bad key');
     expect(setFailedMock).toHaveBeenCalledWith('bad path');
-    expect(processExitMock).toHaveBeenCalledTimes(2);
+    expect(setFailedMock).toHaveBeenCalledWith('bad check');
+    expect(processExitMock).toHaveBeenCalledTimes(3);
   });
 
   it('should exit on invalid args', async () => {

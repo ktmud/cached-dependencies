@@ -47381,7 +47381,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.actions = void 0;
+exports.actions = exports.CheckResult = void 0;
 exports.loadCustomCacheConfigs = loadCustomCacheConfigs;
 exports.hashFiles = hashFiles;
 exports.normalizePathForKey = normalizePathForKey;
@@ -47511,6 +47511,17 @@ function checkCacheService() {
     }
     return true;
 }
+// Exit codes for `check`
+var CheckResult;
+(function (CheckResult) {
+    CheckResult[CheckResult["ExactMatch"] = 0] = "ExactMatch";
+    CheckResult[CheckResult["NotFound"] = 1] = "NotFound";
+    CheckResult[CheckResult["PartialMatch"] = 2] = "PartialMatch";
+})(CheckResult || (exports.CheckResult = CheckResult = {}));
+/**
+ * Cache actions. Each action may return a number to be used as the exit code
+ * of the runner script.
+ */
 exports.actions = {
     /**
      * Restore cache and remember which key matched, so that `save` can skip
@@ -47568,6 +47579,39 @@ exports.actions = {
             }
         }
     },
+    /**
+     * Check whether a cache exists without downloading it. Exits with 0 when
+     * a cache matching the primary key exists, 2 when only one of the restore
+     * keys matched, and 1 when no cache was found.
+     */
+    async check(cacheName, inputs) {
+        const { key, paths, restoreKeys } = inputs;
+        if (!checkCacheService()) {
+            return CheckResult.NotFound;
+        }
+        try {
+            const matchedKey = await cache.restoreCache(paths, key, restoreKeys, {
+                lookupOnly: true,
+            });
+            if (!matchedKey) {
+                core.info(`Cache not found for input keys: ${[key, ...restoreKeys].join(', ')}`);
+                return CheckResult.NotFound;
+            }
+            if (isExactKeyMatch(key, matchedKey)) {
+                core.info(`Cache found for the primary key: ${matchedKey}`);
+                return CheckResult.ExactMatch;
+            }
+            core.info(`Cache found for a restore key: ${matchedKey}`);
+            return CheckResult.PartialMatch;
+        }
+        catch (error) {
+            if (error.name === cache.ValidationError.name) {
+                throw error;
+            }
+            core.warning(error.message);
+            return CheckResult.NotFound;
+        }
+    },
 };
 async function run(action = undefined, cacheName = undefined) {
     if (!action || !(action in exports.actions)) {
@@ -47593,7 +47637,10 @@ async function run(action = undefined, cacheName = undefined) {
         }
         core.info(JSON.stringify(inputs, null, 2));
         try {
-            await exports.actions[action](cacheName, inputs);
+            const exitCode = await exports.actions[action](cacheName, inputs);
+            if (typeof exitCode === 'number') {
+                process.exitCode = exitCode;
+            }
         }
         catch (error) {
             core.setFailed(error.message);

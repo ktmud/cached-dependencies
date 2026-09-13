@@ -128,6 +128,32 @@ steps:
 
 `cache-save` is skipped when `cache-restore` found a cache with the exact same primary key. It is also fine to call `cache-save` without a prior `cache-restore`, e.g. to save build artifacts to be reused by later jobs.
 
+#### Check whether a cache exists
+
+`cache-check` looks up a cache without downloading it. It exits with `0` when a cache with the exact primary key exists, `2` when only one of the `restoreKeys` matched, and `1` when no cache was found. This is useful when one job prepares the cache and other jobs only need to know whether the preparation is still up to date:
+
+```yaml
+steps:
+- uses: actions/checkout@v2
+- uses: ktmud/cached-dependencies@v1
+  with:
+    run: |
+      if cache-check npm; then
+        echo "Dependencies are already cached, skip installing"
+      else
+        npm-install
+      fi
+```
+
+Note that the predefined commands run with `set -e`, so use `cache-check` inside an `if` (or append `|| true`) to avoid failing the step on a cache miss.
+
+#### Invalidate or re-upload a cache
+
+Caches are immutable: once a key has been saved, `cache-save` will not overwrite it. To replace a bad cache, either
+
+- delete it from the **Actions > Caches** page of your repository (or with `gh cache delete <key>`) and re-run the workflow, or
+- change the `keyPrefix` of the cache config (e.g. `npm-v2-`) to start over with a fresh key.
+
 ### Shortcut commands
 
 All predefined shortcut commands can be found [here](https://github.com/ktmud/cached-dependencies/blob/master/src/scripts/bashlib.sh). You can also customize them or add new ones in `.github/workflows/bashlib.sh`.
