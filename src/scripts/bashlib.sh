@@ -24,6 +24,13 @@ cache-save() {
   "$cacheNode" "$cacheScript" save "$1"
 }
 
+# check whether a cache exists without downloading it, exits with 0 when a
+# cache with the exact primary key exists, 2 when only a restore key matched,
+# and 1 when no cache was found.
+cache-check() {
+  "$cacheNode" "$cacheScript" check "$1"
+}
+
 # install python packages
 pip-install() {
   cache-restore pip

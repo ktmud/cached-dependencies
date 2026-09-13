@@ -152,6 +152,17 @@ function checkCacheService(): boolean {
   return true;
 }
 
+// Exit codes for `check`
+export enum CheckResult {
+  ExactMatch = 0,
+  NotFound = 1,
+  PartialMatch = 2,
+}
+
+/**
+ * Cache actions. Each action may return a number to be used as the exit code
+ * of the runner script.
+ */
 export const actions = {
   /**
    * Restore cache and remember which key matched, so that `save` can skip
@@ -210,6 +221,41 @@ export const actions = {
       }
     }
   },
+
+  /**
+   * Check whether a cache exists without downloading it. Exits with 0 when
+   * a cache matching the primary key exists, 2 when only one of the restore
+   * keys matched, and 1 when no cache was found.
+   */
+  async check(cacheName: string, inputs: CacheInputs): Promise<number> {
+    const { key, paths, restoreKeys } = inputs;
+    if (!checkCacheService()) {
+      return CheckResult.NotFound;
+    }
+    try {
+      const matchedKey = await cache.restoreCache(paths, key, restoreKeys, {
+        lookupOnly: true,
+      });
+      if (!matchedKey) {
+        core.info(
+          `Cache not found for input keys: ${[key, ...restoreKeys].join(', ')}`,
+        );
+        return CheckResult.NotFound;
+      }
+      if (isExactKeyMatch(key, matchedKey)) {
+        core.info(`Cache found for the primary key: ${matchedKey}`);
+        return CheckResult.ExactMatch;
+      }
+      core.info(`Cache found for a restore key: ${matchedKey}`);
+      return CheckResult.PartialMatch;
+    } catch (error) {
+      if ((error as Error).name === cache.ValidationError.name) {
+        throw error;
+      }
+      core.warning((error as Error).message);
+      return CheckResult.NotFound;
+    }
+  },
 };
 
 export type ActionChoice = keyof typeof actions;
@@ -244,7 +290,10 @@ export async function run(
     }
     core.info(JSON.stringify(inputs, null, 2));
     try {
-      await actions[action as ActionChoice](cacheName, inputs);
+      const exitCode = await actions[action as ActionChoice](cacheName, inputs);
+      if (typeof exitCode === 'number') {
+        process.exitCode = exitCode;
+      }
     } catch (error) {
       core.setFailed((error as Error).message);
       return process.exit(1);
