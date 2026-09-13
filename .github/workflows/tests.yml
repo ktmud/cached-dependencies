@@ -18,30 +18,30 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-    - name: Install dependencies
-      run: npm ci
-    - name: Run prettier format check
-      run: npm run format-check
-    - name: Lint
-      run: npm run lint
-    - name: Build
-      run: npm run build
-    - name: Check that dist is up to date
-      if: runner.os != 'Windows'
-      shell: bash
-      run: |
-        if [ -n "$(git status --porcelain dist)" ]; then
-          echo "::error::dist/ is out of date, please run 'npm run build' and commit the result."
-          git status --porcelain dist
-          exit 1
-        fi
-    - name: Run tests
-      run: npm run test
-    - name: Upload code coverage
-      uses: codecov/codecov-action@v4
-      with:
-        fail_ci_if_error: false
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install dependencies
+        run: npm ci
+      - name: Run prettier format check
+        run: npm run format-check
+      - name: Lint
+        run: npm run lint
+      - name: Build
+        run: npm run build
+      - name: Check that dist is up to date
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          if [ -n "$(git status --porcelain dist)" ]; then
+            echo "::error::dist/ is out of date, please run 'npm run build' and commit the result."
+            git status --porcelain dist
+            exit 1
+          fi
+      - name: Run tests
+        run: npm run test
+      - name: Upload code coverage
+        uses: codecov/codecov-action@v5
+        with:
+          fail_ci_if_error: false

@@ -2,18 +2,22 @@
  * Execute @actions/cache with predefined cache configs.
  */
 import * as fs from 'fs';
+import * as path from 'path';
+import { createHash } from 'crypto';
+import { pathToFileURL } from 'url';
 import * as core from '@actions/core';
 import * as cache from '@actions/cache';
 import * as glob from '@actions/glob';
-import hasha from 'hasha';
-import { CacheInputs, InputName, DefaultInputs } from '../constants';
-import { getInput, toStringArray } from '../utils/inputs';
-import { loadState, saveState } from './state';
-import caches from './caches'; // default cache configs
+import { CacheInputs, InputName, DefaultInputs } from '../constants.js';
+import { getInput, toStringArray } from '../utils/inputs.js';
+import { loadState, saveState } from './state.js';
+import caches from './caches.js'; // default cache configs
 
 // GitHub uses `sha256` for the built-in `${{ hashFiles(...) }}` expression
 // https://help.github.com/en/actions/reference/context-and-expression-syntax-for-github-actions#hashfiles
-const HASH_OPTION = { algorithm: 'sha256' };
+function sha256(content: string | Buffer): string {
+  return createHash('sha256').update(content).digest('hex');
+}
 
 /**
  * Load custom cache configs from the `caches` path defined in inputs.
@@ -22,23 +26,29 @@ const HASH_OPTION = { algorithm: 'sha256' };
  */
 export async function loadCustomCacheConfigs(): Promise<boolean> {
   const customCachePath = getInput(InputName.Caches);
+  const isDefault = customCachePath === DefaultInputs[InputName.Caches];
+  const resolvedPath = path.resolve(customCachePath);
+  if (!fs.existsSync(resolvedPath)) {
+    if (isDefault) {
+      core.debug(`No custom cache configs found at '${resolvedPath}'`);
+      return true;
+    }
+    core.setFailed(`Custom cache configs not found: '${customCachePath}'`);
+    process.exit(1);
+    return false;
+  }
   try {
-    core.debug(`Reading cache configs from '${customCachePath}'`);
-    const customCache = await import(customCachePath);
+    core.debug(`Reading cache configs from '${resolvedPath}'`);
+    // must use a file URL for dynamic imports to work on Windows
+    const customCache = await import(
+      /* webpackIgnore: true */ pathToFileURL(resolvedPath).href
+    );
     Object.assign(caches, customCache.default || customCache);
   } catch (error) {
-    const { message } = error as Error;
-    if (
-      customCachePath !== DefaultInputs[InputName.Caches] ||
-      !message.includes('Cannot find module')
-    ) {
-      core.error(message);
-      core.setFailed(
-        `Failed to load custom cache configs: '${customCachePath}'`,
-      );
-      process.exit(1);
-      return false;
-    }
+    core.error((error as Error).message);
+    core.setFailed(`Failed to load custom cache configs: '${customCachePath}'`);
+    process.exit(1);
+    return false;
   }
   return true;
 }
@@ -59,12 +69,12 @@ export async function hashFiles(
   let counter = 0;
   for await (const file of globber.globGenerator()) {
     if (!fs.statSync(file).isDirectory()) {
-      hash += hasha.fromFileSync(file, HASH_OPTION);
+      hash += sha256(fs.readFileSync(file));
       counter += 1;
     }
   }
   core.debug(`Computed hash for ${counter} files. Pattern: ${patterns}`);
-  return hasha(hash + extra, HASH_OPTION);
+  return sha256(hash + extra);
 }
 
 // Env variables whose values depend on the runner (and therefore must not

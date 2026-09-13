@@ -1,12 +1,26 @@
 /**
  * Test default runner.
  */
-import { setInputs } from '../src/utils/inputs';
-import { InputName, DefaultInputs } from '../src/constants';
-import * as setup from '../src/setup';
 import path from 'path';
+import { fileURLToPath } from 'url';
+import { describe, expect, it, vi } from 'vitest';
+import * as core from '@actions/core';
+import { setInputs } from '../src/utils/inputs.js';
+import { InputName, DefaultInputs } from '../src/constants.js';
+import * as setup from '../src/setup.js';
 
-const extraBashlib = path.resolve(__dirname, './fixtures/bashlib.sh');
+vi.mock('@actions/core', async importOriginal => ({
+  ...(await importOriginal<typeof import('@actions/core')>()),
+  debug: vi.fn(),
+  info: vi.fn(),
+  error: vi.fn(),
+  setFailed: vi.fn(),
+}));
+
+const extraBashlib = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  './fixtures/bashlib.sh',
+);
 
 describe('toBashPath', () => {
   it('should convert Windows paths to forward slashes', () => {
@@ -20,23 +34,30 @@ describe('toBashPath', () => {
 });
 
 describe('setup runner', () => {
-  // don't actually run the bash script
-  const runCommandMock = jest.spyOn(setup, 'runCommand');
-
-  it('should allow custom bashlib', async () => {
+  it('should run the bashlib with the default command', async () => {
+    const stdout: string[] = [];
+    const stdoutWrite = vi
+      .spyOn(process.stdout, 'write')
+      .mockImplementation(chunk => {
+        stdout.push(String(chunk));
+        return true;
+      });
     setInputs({
       [InputName.Bashlib]: extraBashlib,
+      [InputName.Parallel]: '',
+      [InputName.Run]: '',
     });
     await setup.run();
-    expect(runCommandMock).toHaveBeenCalledTimes(1);
-    expect(runCommandMock).toHaveBeenCalledWith(
-      DefaultInputs[InputName.Run],
-      extraBashlib,
+    stdoutWrite.mockRestore();
+    // the fixture bashlib prints the cache script path
+    expect(setup.toBashPath(stdout.join(''))).toContain(
+      'dist/scripts/cache/index.js',
     );
+    expect(core.setFailed).not.toHaveBeenCalled();
   });
 
   it('should allow inline bash overrides', async () => {
-    const processExitMock = jest
+    const processExitMock = vi
       .spyOn(process, 'exit')
       .mockImplementation((() => {}) as never);
 
@@ -51,30 +72,35 @@ describe('setup runner', () => {
         ${DefaultInputs[InputName.Run]}
       `,
     });
-    // allow the bash script to run for one test, but override the default
     await setup.run();
-    expect(runCommandMock).toHaveBeenCalledTimes(1);
+    expect(core.setFailed).toHaveBeenCalledWith(
+      expect.stringContaining('exit code 202'),
+    );
     expect(processExitMock).toHaveBeenCalledTimes(1);
     expect(processExitMock).toHaveBeenCalledWith(1);
   });
 
   it('should use run commands', async () => {
-    // don't run the commands when there is no overrides
-    runCommandMock.mockImplementation(async () => {});
-
+    const runner = vi.fn(async () => {});
     setInputs({
       [InputName.Bashlib]: 'non-existent',
+      [InputName.Parallel]: '',
       [InputName.Run]: 'print-cachescript-path',
     });
 
-    await setup.run();
+    await setup.run(runner);
 
-    expect(runCommandMock).toHaveBeenCalledTimes(1);
-    expect(runCommandMock).toHaveBeenCalledWith('print-cachescript-path', '');
+    expect(core.error).toHaveBeenCalledWith(
+      'Custom bashlib "non-existent" does not exist.',
+    );
+    expect(runner).toHaveBeenCalledTimes(1);
+    expect(runner).toHaveBeenCalledWith('print-cachescript-path', '');
   });
 
   it('should handle single-new-line parallel commands', async () => {
+    const runner = vi.fn(async () => {});
     setInputs({
+      [InputName.Bashlib]: 'non-existent',
       [InputName.Run]: `
         test-command-1
         test-command-2
@@ -82,14 +108,16 @@ describe('setup runner', () => {
       [InputName.Parallel]: 'true',
     });
 
-    await setup.run();
+    await setup.run(runner);
 
-    expect(runCommandMock).toHaveBeenNthCalledWith(1, 'test-command-1', '');
-    expect(runCommandMock).toHaveBeenNthCalledWith(2, 'test-command-2', '');
+    expect(runner).toHaveBeenNthCalledWith(1, 'test-command-1', '');
+    expect(runner).toHaveBeenNthCalledWith(2, 'test-command-2', '');
   });
 
   it('should handle multi-new-line parallel commands', async () => {
+    const runner = vi.fn(async () => {});
     setInputs({
+      [InputName.Bashlib]: 'non-existent',
       [InputName.Run]: `
         test-1-1
         test-1-2
@@ -99,13 +127,9 @@ describe('setup runner', () => {
       [InputName.Parallel]: 'true',
     });
 
-    await setup.run();
+    await setup.run(runner);
 
-    expect(runCommandMock).toHaveBeenNthCalledWith(
-      1,
-      'test-1-1\n        test-1-2',
-      '',
-    );
-    expect(runCommandMock).toHaveBeenNthCalledWith(2, 'test-2', '');
+    expect(runner).toHaveBeenNthCalledWith(1, 'test-1-1\n        test-1-2', '');
+    expect(runner).toHaveBeenNthCalledWith(2, 'test-2', '');
   });
 });

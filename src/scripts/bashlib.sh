@@ -7,7 +7,7 @@
 set -e
 
 bashSource=${BASH_SOURCE[${#BASH_SOURCE[@]} - 1]:-${(%):-%x}}
-cacheScript="$(dirname "$(dirname "$(dirname "$bashSource")")")/dist/scripts/cache"
+cacheScript="$(dirname "$(dirname "$(dirname "$bashSource")")")/dist/scripts/cache/index.js"
 # Use the same node binary that runs the action (set by the action itself),
 # fallback to whatever `node` is in PATH when running the scripts manually.
 cacheNode="${CACHED_DEPENDENCIES_NODE:-node}"

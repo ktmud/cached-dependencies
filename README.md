@@ -10,7 +10,7 @@ This is your all-in-one action for everything related to setting up dependencies
 
 ## Requirements
 
-- The action runs on the `node20` runtime bundled with the GitHub Actions runner.
+- The action runs on the `node24` runtime bundled with the GitHub Actions runner.
 - The `cache-restore` and `cache-save` commands always use the same Node.js binary that runs the action, so the Node.js version you set up with `actions/setup-node` (or whatever `node` is in `PATH`) does not matter.
 - Linux, macOS and Windows runners are supported. On Windows, commands run in the Git Bash that ships with the runner, so `run` and `bashlib` are still written in bash.
 - Caches are stored via the [`@actions/cache`](https://github.com/actions/toolkit/tree/main/packages/cache) toolkit and share the same storage, limits and eviction policies as [actions/cache](https://github.com/actions/cache).
@@ -18,7 +18,7 @@ This is your all-in-one action for everything related to setting up dependencies
 ## Inputs
 
 - **run**: bash commands to run, allows shortcut commands
-- **caches**: path to a JS module that defines cache targets, defaults to `.github/workflows/caches.js`
+- **caches**: path to a JS module (CommonJS or ESM) that defines cache targets, defaults to `.github/workflows/caches.js`
 - **bashlib**: path to a BASH scripts that defines shortcut commands, defaults to `.github/workflows/bashlib.sh`
 - **parallel**: whether to run the commands in parallel with node subprocesses
 
