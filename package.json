@@ -22,23 +22,23 @@
     "typecheck": "tsc --noEmit -p __tests__/tsconfig.json"
   },
   "dependencies": {
-    "@actions/cache": "6.2.0",
+    "@actions/cache": "6.3.0",
     "@actions/core": "3.0.1",
     "@actions/exec": "3.0.0",
     "@actions/glob": "0.7.0"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
-    "@types/node": "24.13.4",
+    "@types/node": "24.19.0",
     "@vercel/ncc": "0.45.0",
-    "@vitest/coverage-v8": "5.0.0",
+    "@vitest/coverage-v8": "5.0.3",
     "@vitest/eslint-plugin": "1.6.27",
-    "eslint": "10.10.0",
-    "prettier": "3.9.6",
+    "eslint": "10.11.0",
+    "prettier": "3.9.9",
     "prettier-plugin-packagejson": "3.0.2",
     "typescript": "5.9.3",
-    "typescript-eslint": "8.70.0",
-    "vitest": "5.0.0"
+    "typescript-eslint": "8.71.0",
+    "vitest": "5.0.3"
   },
   "engines": {
     "node": ">=24"
